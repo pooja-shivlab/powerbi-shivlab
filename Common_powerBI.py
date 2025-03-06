@@ -1,4 +1,5 @@
-import os, re
+import os
+import re
 import logging
 import pandas as pd
 from office365.runtime.auth.authentication_context import AuthenticationContext
