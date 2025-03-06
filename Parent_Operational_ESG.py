@@ -667,7 +667,6 @@ if "Parent" in main_folder_list:
                                     df.drop(columns=["Created"], inplace=True)
                                     logging.info(f"'Created' column removed.")
 
-                                # table_name = sheet_to_table_map[sheet_name]
                                 table_name = "[dbo].[Social-EmployeeByGender]"
                                 logging.info(f"Table name set to: {table_name}")
 
@@ -1507,8 +1506,6 @@ if "Parent" in main_folder_list:
                     elif sheet_name == "Targets":
                         try:
                             logging.info("Special processing for 'Targets'")
-                            # table_name = '[dbo].[Targets]'
-                            # logging.info("Gov - Board", df.columns)
                             df = df.drop(columns=["Unnamed:_0"])
                             print("DF", df.columns)
                             # Clean the column names to remove leading/trailing spaces

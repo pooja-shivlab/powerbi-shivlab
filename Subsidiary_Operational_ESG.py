@@ -103,7 +103,6 @@ if "Subsidiary" in main_folder_list:
                         "Subsidiary RKAP Cash Flow",
                         "Debt Management",
                     ]:
-                        # print(f"Ignoring sheet: {sheet_name}")  # Optionally, print which sheet is being ignored
                         logging.info(f"Skipping sheet: {sheet_name}")
                         continue  # Skip processing this sheet
                     else:
@@ -717,7 +716,6 @@ if "Subsidiary" in main_folder_list:
                     elif sheet_name == "Project Expenses":
                         try:
                             company_name = df["Company"].iloc[0]
-                            # print(df.columns, "Expenses")
                             logging.info(
                                 "Special processing for 'Project Expenses' sheet."
                             )
@@ -1297,7 +1295,6 @@ if "Subsidiary" in main_folder_list:
                             )
 
                             df = df.drop(columns=["Unnamed:_0"])
-                            # print(df.columns, "Monthly")
                             required_columns = [
                                 "Year",
                                 "Recorded Electricity Delivered (MWh)",
@@ -2014,9 +2011,7 @@ if "Subsidiary" in main_folder_list:
                             logging.info(
                                 "Special processing for 'Env - Scope 1 & 2 Emissions'"
                             )
-                            # table_name = '[dbo].[Env-Scope1&2Emissions]'
 
-                            # print("Env-Scope1&2Emissions", df.columns)
                             df = df.drop(columns=["Unnamed:_0"])
                             # Clean the column names to remove leading/trailing spaces
                             df.columns = df.columns.str.strip()
@@ -2040,7 +2035,6 @@ if "Subsidiary" in main_folder_list:
                                     df.drop(columns=["Created"], inplace=True)
                                     logging.info(f"'Created' column removed.")
 
-                                # table_name = sheet_to_table_map[sheet_name]
 
                                 table_name = "[dbo].[SubsidiaryEnv-Scope1&2Emissions]"
                                 existing_rows_query = f"""
@@ -2324,7 +2318,6 @@ if "Subsidiary" in main_folder_list:
                                     df.drop(columns=["Created"], inplace=True)
                                     logging.info(f"'Created' column removed.")
 
-                                # table_name = sheet_to_table_map[sheet_name]
                                 table_name = "[dbo].[SubsidiarySocial-EmployeeByGender]"
                                 logging.info(f"Table name set to: {table_name}")
 
@@ -2476,7 +2469,6 @@ if "Subsidiary" in main_folder_list:
                                 "Special processing for 'Social - Employee by Age'"
                             )
 
-                            # table_name = '[dbo].[Social-EmployeeByAge]'
 
                             df = df.drop(columns=["Unnamed:_0"])
 
@@ -2498,13 +2490,10 @@ if "Subsidiary" in main_folder_list:
 
                             for col in required_columns:
 
-                                # if col not in df.columns:
 
-                                #     logging.error(
 
                                 #         f"Missing required column '{col}' in Social-EmployeeByAge")
 
-                                #     continue
 
                                 # Rename columns to match the database schema if necessary
 
@@ -2535,7 +2524,6 @@ if "Subsidiary" in main_folder_list:
 
                                 # Insert data into the defined table
 
-                                # table_name = sheet_to_table_map[sheet_name]
 
                                 table_name = "[dbo].[SubsidiarySocial-EmployeeByAge]"
 
@@ -2896,8 +2884,6 @@ if "Subsidiary" in main_folder_list:
                             logging.info(
                                 "Special processing for 'Gov - Management Diversity'"
                             )
-                            # table_name = '[dbo].[Gov-ManagementDiversity]'
-                            # print("Gov - Management Diversity", df.columns)
                             df = df.drop(columns=["Unnamed:_0"])
                             # Clean the column names to remove leading/trailing spaces
                             df.columns = df.columns.str.strip()
