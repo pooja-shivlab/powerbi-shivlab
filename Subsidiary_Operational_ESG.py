@@ -3,12 +3,11 @@ from Parent_Operational_ESG import *
 
 if "Subsidiary" in main_folder_list:
     logging.info("Processing 'Subsidiary' folder.")
-    # Process only the "Subsidiary" folder and its subfolders
     xlsx_files = process_subfolders(
         ctx, parent_path="/sites/Dashboard-UAT/Shared%20Documents/Subsidiary"
     )
-    all_xlsx_files.extend(xlsx_files)  # Add the results from Subsidiary
-    sheet_to_table_map = sheet_to_table_map_subsidiary  # Use the correct mapping
+    all_xlsx_files.extend(xlsx_files)
+    sheet_to_table_map = sheet_to_table_map_subsidiary
     parent_path = "/sites/Dashboard-UAT/Shared%20Documents/Subsidiary"
     subfolders = get_subfolders(ctx, parent_path)
     logging.info(f"Found subfolders: {subfolders}")
@@ -16,12 +15,8 @@ if "Subsidiary" in main_folder_list:
         subfolder_path = f"{parent_path}/{subfolder}"
         logging.info(f"Processing subfolder: {subfolder}")
         global_subfolder = subfolder
-        # dashboard_name = subfolder_path.strip('/').split('/')[-1]
-        # Get XLSX files for the current subfolder
         xlsx_files = process_subfolders(ctx, parent_path=subfolder_path)
-        all_xlsx_files.extend(
-            xlsx_files
-        )  # Ensure files are mapped to correct subfolder
+        all_xlsx_files.extend(xlsx_files)
 
         dashboard_folders = get_subfolders(ctx, subfolder_path)
 
@@ -34,19 +29,15 @@ if "Subsidiary" in main_folder_list:
             ]
             dashboard_file_map[dashboard] = dashboard_files
 
-            # Process all files in the current folder
             for file in xlsx_files:
-                # Download the file locally
                 target_file = ctx.web.get_file_by_server_relative_url(file)
                 with open("local_copy.xlsx", "wb") as local_file:
                     target_file.download(local_file).execute_query()
 
-                # Load the workbook to inspect sheet names
                 xls = pd.ExcelFile("local_copy.xlsx")
                 sheet_names = xls.sheet_names
 
                 logging.info(f"Sheet names in the workbook: {sheet_names}")
-                # Skip the "Preface" sheet if present
                 if "Preface" in sheet_names:
                     sheet_names.remove("Preface")
 
@@ -59,7 +50,7 @@ if "Subsidiary" in main_folder_list:
                         "Construction Timeline",
                     ]:
                         skiprows = 3
-                        header = 0  # First row after skipping rows becomes header
+                        header = 0
                     elif sheet_name in [
                         "Electricity Generation (monthly",
                         "Outages & Availability (Monthly",
@@ -74,7 +65,7 @@ if "Subsidiary" in main_folder_list:
                     ]:
                         skiprows = 1
                         if sheet_name in ["Project Expenses"]:
-                            header = [0, 1]  # Combined header from rows 3 and 4
+                            header = [0, 1]
                         else:
                             header = 0
                     elif sheet_name == "Electricity Generation (Annualy":
@@ -103,12 +94,12 @@ if "Subsidiary" in main_folder_list:
                         "Subsidiary RKAP Cash Flow",
                         "Debt Management",
                     ]:
-                        # print(f"Ignoring sheet: {sheet_name}")  # Optionally, print which sheet is being ignored
+
                         logging.info(f"Skipping sheet: {sheet_name}")
-                        continue  # Skip processing this sheet
+                        continue
                     else:
                         skiprows = 4
-                        header = 0  # First row after skipping rows becomes header
+                        header = 0
                     inferred_dashboard = None
                     for dash in dashboard_folders:
                         if dash.lower() in file.lower():
@@ -125,23 +116,17 @@ if "Subsidiary" in main_folder_list:
                     )
                     df["Company"] = subfolder
                     df["Dashboard"] = inferred_dashboard
-                    # Check if the sheet is 'Construction Timeline' and flatten columns only for this sheet
-                    # Check if the sheet is 'Construction Timeline' and flatten columns only for this sheet
+
                     if sheet_name in ["Project Expenses"]:
-                        # Check if the sheet requires flattening
                         if isinstance(df.columns, pd.MultiIndex):
-                            # Flatten MultiIndex for specific sheets only
+
                             df.columns = [
                                 " ".join(col).strip() for col in df.columns.values
                             ]
 
                     for col in df.columns:
-                        if (
-                            df[col].dtype == "object"
-                        ):  # Check if the column is of string type
-                            df[col] = df[
-                                col
-                            ].str.strip()  # Remove leading and trailing spaces
+                        if df[col].dtype == "object":
+                            df[col] = df[col].str.strip()
 
                     df["Company"] = subfolder
                     df.columns = (
@@ -150,7 +135,6 @@ if "Subsidiary" in main_folder_list:
                         .str.replace(r"[^a-zA-Z0-9_]", "")
                     )
 
-                    # Replace NaN values with 0 for numeric columns
                     df.fillna(0, inplace=True)
 
                     if sheet_name == "Financial Performance":
@@ -168,7 +152,6 @@ if "Subsidiary" in main_folder_list:
                             ]
 
                             for col in required_columns:
-                                # Rename columns to match the database schema if necessary
                                 column_mapping = {
                                     "Date": "Date",
                                     "Penalty_Cost_(IDR)": "PenaltyCost(IDR)",
@@ -176,49 +159,40 @@ if "Subsidiary" in main_folder_list:
                                     "Notes": "Notes",
                                 }
                                 df.rename(columns=column_mapping, inplace=True)
-                                # Remove the 'Created' column if it exists
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
                                     logging.info(f"'Created' column removed.")
-
-                                # Insert data into the defined table
                                 table_name = "dbo.OP_FinancialPerformance"
                                 existing_rows_query = f"""
-                                                                                     SELECT Date, Remarks ,Company
-                                                                                     FROM {table_name}
-                                                                                 """
+                                                    SELECT Date, Remarks ,Company
+                                                    FROM {table_name}
+                                                """
                                 cursor.execute(existing_rows_query)
                                 rows = cursor.fetchall()
-                                existing_rows_set = {
-                                    tuple(row) for row in rows
-                                }  # Convert rows to tuples for hashing
+                                existing_rows_set = {tuple(row) for row in rows}
 
-                                # Step 2: Compare with DataFrame
                                 df_tuples = set(
                                     zip(df["Date"], df["Remarks"], df["Company"])
-                                )  # Convert df to a set of tuples
+                                )
 
-                                missing_rows = (
-                                    df_tuples - existing_rows_set
-                                )  # Find missing rows
+                                missing_rows = df_tuples - existing_rows_set
                                 if missing_rows:
                                     logging.info(
                                         "Missing rows detected. Performing TRUNCATE + INSERT."
                                     )
 
-                                    # Step 3: Truncate the table before inserting new data
                                     truncate_query = (
                                         f"DELETE FROM {table_name} WHERE Company = ?;"
                                     )
                                     cursor.execute(truncate_query, (company_name,))
 
                                     insert_query = f"""
-                                                                             INSERT INTO {table_name} (
-                                                                                  [PenaltyCost(IDR)], [Notes], [Company], [Date], 
-                                                                                  [Remarks]
-                                                                              )
-                                                                              VALUES (?, ?, ?, ?, ?)
-                                                                         """
+                                                        INSERT INTO {table_name} (
+                                                            [PenaltyCost(IDR)], [Notes], [Company], [Date], 
+                                                            [Remarks]
+                                                        )
+                                                        VALUES (?, ?, ?, ?, ?)
+                                                    """
                                     for _, row in df.iterrows():
                                         cursor.execute(
                                             insert_query,
@@ -236,48 +210,43 @@ if "Subsidiary" in main_folder_list:
                                     )
 
                                     update_insert_query = f"""
-                                                                                                IF EXISTS (
-                                                                                                      SELECT 1
-                                                                                                      FROM {table_name}
-                                                                                                      WHERE  [Date] = ? AND [Remarks] = ? AND [Company] = ?
-                                                                                                  )
-                                                                                                  BEGIN
-                                                                                                      UPDATE {table_name}
-                                                                                                      SET 
-                                                                                                          [PenaltyCost(IDR)] = ?, 
-                                                                                                          [Notes] = ?
+                                        IF EXISTS (
+                                                SELECT 1
+                                                FROM {table_name}
+                                                WHERE  [Date] = ? AND [Remarks] = ? AND [Company] = ?
+                                            )
+                                            BEGIN
+                                                UPDATE {table_name}
+                                                SET 
+                                                    [PenaltyCost(IDR)] = ?, 
+                                                    [Notes] = ?
 
-                                                                                                      WHERE [Date] = ? AND [Remarks] = ? AND [Company] = ?;
-                                                                                                  END
-                                                                                                  ELSE
-                                                                                                  BEGIN
-                                                                                                      INSERT INTO {table_name} (
-                                                                                                          [PenaltyCost(IDR)], [Notes], [Company], [Date], 
-                                                                                                          [Remarks]
-                                                                                                      )
-                                                                                                      VALUES (?, ?, ?, ?, ?);
-                                                                                                  END
-                                                                                                """
+                                                WHERE [Date] = ? AND [Remarks] = ? AND [Company] = ?;
+                                            END
+                                            ELSE
+                                            BEGIN
+                                                INSERT INTO {table_name} (
+                                                    [PenaltyCost(IDR)], [Notes], [Company], [Date], 
+                                                    [Remarks]
+                                                )
+                                                VALUES (?, ?, ?, ?, ?);
+                                            END
+                                        """
 
                                     logging.info(
                                         "Beginning insertion into OP_FinancialPerformance table."
                                     )
 
                                     for _, row in df.iterrows():
-                                        # Define the placeholders for this row
                                         placeholders = (
-                                            # For IF EXISTS condition
                                             row["Date"],
                                             row["Remarks"],
                                             row["Company"],
-                                            # For UPDATE clause
                                             row["PenaltyCost(IDR)"],
                                             row["Notes"],
-                                            # WHERE conditions for UPDATE
                                             row["Date"],
                                             row["Remarks"],
                                             row["Company"],
-                                            # For INSERT INTO clause
                                             row["PenaltyCost(IDR)"],
                                             row["Notes"],
                                             row["Company"],
@@ -333,7 +302,6 @@ if "Subsidiary" in main_folder_list:
                                 df["ActualCompletionDate"], errors="coerce"
                             )
 
-                            # Remove the 'Created' column if it exists
                             if "Created" in df.columns:
                                 df.drop(columns=["Created"], inplace=True)
                                 logging.info("'Created' column removed.")
@@ -345,35 +313,29 @@ if "Subsidiary" in main_folder_list:
                                                              """
                             cursor.execute(existing_rows_query)
                             rows = cursor.fetchall()
-                            existing_rows_set = {
-                                tuple(row) for row in rows
-                            }  # Convert rows to tuples for hashing
+                            existing_rows_set = {tuple(row) for row in rows}
 
-                            # Step 2: Compare with DataFrame
                             df_tuples = set(
                                 zip(df["Company"], df["Stage"], df["Status"])
-                            )  # Convert df to a set of tuples
+                            )
 
-                            missing_rows = (
-                                df_tuples - existing_rows_set
-                            )  # Find missing rows
+                            missing_rows = df_tuples - existing_rows_set
                             if missing_rows:
                                 logging.info(
                                     "Missing rows detected. Performing TRUNCATE + INSERT."
                                 )
 
-                                # Step 3: Truncate the table before inserting new data
                                 truncate_query = (
                                     f"DELETE FROM {table_name} WHERE Company = ?;"
                                 )
                                 cursor.execute(truncate_query, (company_name,))
 
                                 insert_query = f"""
-                                                                INSERT INTO {table_name} (
-                                                                      [Company], [Phase], [Stage], [PlannedCompletionDate], [ActualCompletionDate],
-                                                                      [Status], [Progression]                                             
-                                                                  )
-                                                                  VALUES (?, ?, ?, ?, ?, ?, ?)
+                                    INSERT INTO {table_name} (
+                                            [Company], [Phase], [Stage], [PlannedCompletionDate], [ActualCompletionDate],
+                                            [Status], [Progression]                                             
+                                        )
+                                        VALUES (?, ?, ?, ?, ?, ?, ?)
                                                            """
 
                                 for _, row in df.iterrows():
@@ -392,30 +354,30 @@ if "Subsidiary" in main_folder_list:
                             else:
                                 logging.info("Rows exist. Performing UPDATE or INSERT.")
                                 update_insert_query = f"""
-                                                              IF EXISTS (
-                                                                  SELECT 1
-                                                                  FROM {table_name}
-                                                                  WHERE [Company] = ? AND [Stage] = ? AND [Status] = ?
-                                                              )
-                                                              BEGIN
-                                                                  UPDATE {table_name}
-                                                                  SET 
-                                                                      [PlannedCompletionDate] = ?, 
-                                                                      [ActualCompletionDate] = ?, 
-                                                                      [Progression] = ?,                                                                                                              
-                                                                      [Phase] = ?
+                                    IF EXISTS (
+                                        SELECT 1
+                                        FROM {table_name}
+                                        WHERE [Company] = ? AND [Stage] = ? AND [Status] = ?
+                                    )
+                                    BEGIN
+                                        UPDATE {table_name}
+                                        SET 
+                                            [PlannedCompletionDate] = ?, 
+                                            [ActualCompletionDate] = ?, 
+                                            [Progression] = ?,                                                                                                              
+                                            [Phase] = ?
 
-                                                                  WHERE [Company] = ? AND [Stage] = ? AND [Status] = ?;
-                                                              END
-                                                              ELSE
-                                                              BEGIN
-                                                                  INSERT INTO {table_name} (
-                                                                      [Company], [Phase], [Stage], [PlannedCompletionDate], [ActualCompletionDate],
-                                                                      [Status], [Progression]                                            
-                                                                  )
-                                                                  VALUES (?, ?, ?, ?, ?, ?, ?);
-                                                              END
-                                                          """
+                                        WHERE [Company] = ? AND [Stage] = ? AND [Status] = ?;
+                                    END
+                                    ELSE
+                                    BEGIN
+                                        INSERT INTO {table_name} (
+                                            [Company], [Phase], [Stage], [PlannedCompletionDate], [ActualCompletionDate],
+                                            [Status], [Progression]                                            
+                                        )
+                                        VALUES (?, ?, ?, ?, ?, ?, ?);
+                                    END
+                                """
                                 logging.info(
                                     "Beginning insertion into 'Project Timeline' table."
                                 )
@@ -424,20 +386,16 @@ if "Subsidiary" in main_folder_list:
                                     cursor.execute(
                                         update_insert_query,
                                         (
-                                            # For IF EXISTS condition
                                             row.get("Company", None),
                                             row.get("Stage", None),
                                             row.get("Status", None),
-                                            # For UPDATE clause
                                             row.get("PlannedCompletionDate", None),
                                             row.get("ActualCompletionDate", None),
                                             row.get("Progression", None),
                                             row.get("Phase", None),
-                                            # WHERE conditions for UPDATE
                                             row.get("Company", None),
                                             row.get("Stage", None),
                                             row.get("Status", None),
-                                            # For INSERT INTO clause
                                             row.get("Company", None),
                                             row.get("Phase", None),
                                             row.get("Stage", None),
@@ -447,8 +405,6 @@ if "Subsidiary" in main_folder_list:
                                             row.get("Progression", None),
                                         ),
                                     )
-
-                                # Commit the transaction
                             conn.commit()
                             logging.info(
                                 "Data successfully processed and committed for 'Project Timeline' sheet."
@@ -508,7 +464,7 @@ if "Subsidiary" in main_folder_list:
                                 }
 
                                 df.rename(columns=column_mapping, inplace=True)
-                                # Remove the 'Created' column if it exists
+
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
                                     logging.info(f"'Created' column removed.")
@@ -522,7 +478,7 @@ if "Subsidiary" in main_folder_list:
                                 ]["Project"].tolist()
 
                                 if matching_projects:
-                                    # Store the Project in DataFrame
+
                                     df["Project"] = ", ".join(matching_projects)
                                     logging.info(
                                         f"Mapped Projects for Company '{company_name}': {df['Project'].iloc[0]}"
@@ -549,9 +505,9 @@ if "Subsidiary" in main_folder_list:
                                         "Missing rows detected. Performing TRUNCATE + INSERT."
                                     )
                                     truncate_query = f"""
-                                                                                                           DELETE FROM {table_name} WITH (ROWLOCK, UPDLOCK)
-                                                                                                           WHERE [Company] = ? AND [Project] = ?
-                                                                                                    """
+                                                    DELETE FROM {table_name} WITH (ROWLOCK, UPDLOCK)
+                                                    WHERE [Company] = ? AND [Project] = ?
+                                            """
                                     missing_rows = list(missing_rows)
                                     cursor.executemany(truncate_query, missing_rows)
                                     conn.commit()
@@ -560,25 +516,25 @@ if "Subsidiary" in main_folder_list:
                                     )
 
                                     insert_query = f"""
-                                                                            INSERT INTO {table_name} (
-                                                                               [Company],
-                                                                               [Project],
-                                                                               [ProjectDuration_Days],
-                                                                               [ConstructionDuration],
-                                                                               [Budget_Currency],
-                                                                               [Budget_Construction],
-                                                                               [Budget_Other],
-                                                                               [Budget_Total],
-                                                                               [Actual_Currency],
-                                                                               [Actual_Construction],
-                                                                               [Actual_Other],
-                                                                               [Actual_Total],
-                                                                               [ConstructionPercentage],
-                                                                               [OtherPercentage],
-                                                                               [TotalPercentage]
-                                                                           )
-                                                                           VALUES (?,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                                                                       """
+                                                INSERT INTO {table_name} (
+                                                    [Company],
+                                                    [Project],
+                                                    [ProjectDuration_Days],
+                                                    [ConstructionDuration],
+                                                    [Budget_Currency],
+                                                    [Budget_Construction],
+                                                    [Budget_Other],
+                                                    [Budget_Total],
+                                                    [Actual_Currency],
+                                                    [Actual_Construction],
+                                                    [Actual_Other],
+                                                    [Actual_Total],
+                                                    [ConstructionPercentage],
+                                                    [OtherPercentage],
+                                                    [TotalPercentage]
+                                                )
+                                                VALUES (?,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                            """
                                     for _, row in df.iterrows():
                                         cursor.execute(
                                             insert_query,
@@ -605,52 +561,52 @@ if "Subsidiary" in main_folder_list:
                                         "Rows exist. Performing UPDATE or INSERT."
                                     )
                                     update_insert_query = f"""
-                                                                                 IF EXISTS (
-                                                                                       SELECT 1
-                                                                                       FROM {table_name}
-                                                                                       WHERE [Company] = ? AND [Project] = ?
-                                                                                   )
-                                                                                   BEGIN
-                                                                                       UPDATE {table_name}
-                                                                                       SET 
-                                                                                           [ProjectDuration_Days] = ?,
-                                                                                           [ConstructionDuration] = ?,
-                                                                                           [Budget_Currency] = ?,
-                                                                                           [Budget_Construction] = ?,
-                                                                                           [Budget_Other] = ?,
-                                                                                           [Budget_Total] = ?,
-                                                                                           [Actual_Currency] = ?,
-                                                                                           [Actual_Construction] = ?,
-                                                                                           [Actual_Other] = ?,
-                                                                                           [Actual_Total] = ?,
-                                                                                           [ConstructionPercentage] = ?,
-                                                                                           [OtherPercentage] = ?,
-                                                                                           [TotalPercentage] = ?                                                       
+                                        IF EXISTS (
+                                            SELECT 1
+                                            FROM {table_name}
+                                            WHERE [Company] = ? AND [Project] = ?
+                                        )
+                                        BEGIN
+                                            UPDATE {table_name}
+                                            SET 
+                                                [ProjectDuration_Days] = ?,
+                                                [ConstructionDuration] = ?,
+                                                [Budget_Currency] = ?,
+                                                [Budget_Construction] = ?,
+                                                [Budget_Other] = ?,
+                                                [Budget_Total] = ?,
+                                                [Actual_Currency] = ?,
+                                                [Actual_Construction] = ?,
+                                                [Actual_Other] = ?,
+                                                [Actual_Total] = ?,
+                                                [ConstructionPercentage] = ?,
+                                                [OtherPercentage] = ?,
+                                                [TotalPercentage] = ?                                                       
 
-                                                                                       WHERE [Company] = ? AND [Project] = ?;
-                                                                                   END
-                                                                                   ELSE
-                                                                                   BEGIN
-                                                                                       INSERT INTO {table_name} (
-                                                                                           [Company],
-                                                                                           [Project],
-                                                                                           [ProjectDuration_Days],
-                                                                                           [ConstructionDuration],
-                                                                                           [Budget_Currency],
-                                                                                           [Budget_Construction],
-                                                                                           [Budget_Other],
-                                                                                           [Budget_Total],
-                                                                                           [Actual_Currency],
-                                                                                           [Actual_Construction],
-                                                                                           [Actual_Other],
-                                                                                           [Actual_Total],
-                                                                                           [ConstructionPercentage],
-                                                                                           [OtherPercentage],
-                                                                                           [TotalPercentage]
-                                                                                       )
-                                                                                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-                                                                                   END
-                                                                               """
+                                            WHERE [Company] = ? AND [Project] = ?;
+                                        END
+                                        ELSE
+                                        BEGIN
+                                            INSERT INTO {table_name} (
+                                                [Company],
+                                                [Project],
+                                                [ProjectDuration_Days],
+                                                [ConstructionDuration],
+                                                [Budget_Currency],
+                                                [Budget_Construction],
+                                                [Budget_Other],
+                                                [Budget_Total],
+                                                [Actual_Currency],
+                                                [Actual_Construction],
+                                                [Actual_Other],
+                                                [Actual_Total],
+                                                [ConstructionPercentage],
+                                                [OtherPercentage],
+                                                [TotalPercentage]
+                                            )
+                                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+                                        END
+                                    """
 
                                     logging.info(
                                         "Beginning insertion into OP_Project Details table."
@@ -659,10 +615,8 @@ if "Subsidiary" in main_folder_list:
                                         cursor.execute(
                                             update_insert_query,
                                             (
-                                                # For IF EXISTS condition
                                                 row["Company"],
                                                 row["Project"],
-                                                # For UPDATE clause
                                                 row["ProjectDuration_Days"],
                                                 row["ConstructionDuration"],
                                                 row["Budget_Currency"],
@@ -676,10 +630,8 @@ if "Subsidiary" in main_folder_list:
                                                 row["ConstructionPercentage"],
                                                 row["OtherPercentage"],
                                                 row["TotalPercentage"],
-                                                # WHERE conditions for UPDATE
                                                 row["Company"],
                                                 row["Project"],
-                                                # For INSERT INTO clause
                                                 row["Company"],
                                                 row["Project"],
                                                 row["ProjectDuration_Days"],
@@ -717,7 +669,7 @@ if "Subsidiary" in main_folder_list:
                     elif sheet_name == "Project Expenses":
                         try:
                             company_name = df["Company"].iloc[0]
-                            # print(df.columns, "Expenses")
+
                             logging.info(
                                 "Special processing for 'Project Expenses' sheet."
                             )
@@ -754,13 +706,10 @@ if "Subsidiary" in main_folder_list:
 
                                 df.rename(columns=column_mapping, inplace=True)
 
-                                # Remove the 'Created' column if it exists
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
                                     logging.info(f"'Created' column removed.")
 
-                                # Insert data into the defined table
-                                # table_name = sheet_to_table_map[sheet_name]
                                 table_name = "dbo.OP_ProjectExpenses"
                                 existing_rows_query = f"""
                                                                      SELECT Date, Company
@@ -768,24 +717,16 @@ if "Subsidiary" in main_folder_list:
                                                                  """
                                 cursor.execute(existing_rows_query)
                                 rows = cursor.fetchall()
-                                existing_rows_set = {
-                                    tuple(row) for row in rows
-                                }  # Convert rows to tuples for hashing
+                                existing_rows_set = {tuple(row) for row in rows}
 
-                                # Step 2: Compare with DataFrame
-                                df_tuples = set(
-                                    zip(df["Date"], df["Company"])
-                                )  # Convert df to a set of tuples
+                                df_tuples = set(zip(df["Date"], df["Company"]))
 
-                                missing_rows = (
-                                    df_tuples - existing_rows_set
-                                )  # Find missing rows
+                                missing_rows = df_tuples - existing_rows_set
                                 if missing_rows:
                                     logging.info(
                                         "Missing rows detected. Performing TRUNCATE + INSERT."
                                     )
 
-                                    # Step 3: Truncate the table before inserting new data
                                     truncate_query = (
                                         f"DELETE FROM {table_name} WHERE Company = ?;"
                                     )
@@ -814,31 +755,31 @@ if "Subsidiary" in main_folder_list:
                                         "Rows exist. Performing UPDATE or INSERT."
                                     )
                                     update_insert_query = f"""
-                                                             IF EXISTS (
-                                                                   SELECT 1
-                                                                   FROM {table_name}
-                                                                   WHERE [Date] = ? AND [Company] = ?
-                                                               )
-                                                               BEGIN
-                                                                   UPDATE {table_name}
-                                                                   SET
-                                                                       [Currency] = ?,
-                                                                       [Construction] = ?,
-                                                                       [Other] = ?,
-                                                                       [Total] = ?
+                                        IF EXISTS (
+                                            SELECT 1
+                                            FROM {table_name}
+                                            WHERE [Date] = ? AND [Company] = ?
+                                        )
+                                        BEGIN
+                                            UPDATE {table_name}
+                                            SET
+                                                [Currency] = ?,
+                                                [Construction] = ?,
+                                                [Other] = ?,
+                                                [Total] = ?
 
-                                                                   WHERE [Date] = ? AND [Company] = ?;
-                                                               END
-                                                               ELSE
-                                                               BEGIN
-                                                                   INSERT INTO {table_name} (
-                                                                       [Date], [Company], [Currency], [Construction], [Other], [Total]
+                                            WHERE [Date] = ? AND [Company] = ?;
+                                        END
+                                        ELSE
+                                        BEGIN
+                                            INSERT INTO {table_name} (
+                                                [Date], [Company], [Currency], [Construction], [Other], [Total]
 
-                                                                   )
-                                                                   VALUES (?, ?, ?, ?, ?, ?);
-                                                               END
+                                            )
+                                            VALUES (?, ?, ?, ?, ?, ?);
+                                        END
 
-                                                                                                               """
+                                        """
 
                                     logging.info(
                                         "Beginning insertion into OP_Project Expenses table."
@@ -848,22 +789,14 @@ if "Subsidiary" in main_folder_list:
                                         cursor.execute(
                                             update_insert_query,
                                             (
-                                                # For IF EXISTS condition
                                                 row["Date"],
                                                 row["Company"],
-                                                # For UPDATE clause
-                                                row[
-                                                    "Currency"
-                                                ],  # If Actual Completion is being updated
-                                                row[
-                                                    "Construction"
-                                                ],  # Assuming Target Completion is updated
+                                                row["Currency"],
+                                                row["Construction"],
                                                 row["Other"],
                                                 row["Total"],
-                                                # WHERE conditions for UPDATE
                                                 row["Date"],
                                                 row["Company"],
-                                                # For INSERT INTO clause
                                                 row["Date"],
                                                 row["Company"],
                                                 row["Currency"],
@@ -905,7 +838,7 @@ if "Subsidiary" in main_folder_list:
                                 "Unnamed:_6",
                                 "Unnamed:_7",
                             ]
-                            # Ensure date columns are properly converted
+
                             df["Planned"] = pd.to_datetime(
                                 df["Planned"], errors="coerce"
                             )
@@ -917,24 +850,14 @@ if "Subsidiary" in main_folder_list:
                                 df["Forecasted"], errors="coerce"
                             )
 
-                            df["Unnamed:_5"] = df["Unnamed:_5"].fillna(
-                                0.0
-                            )  # Default fill for 'Completion' column
-                            df["Unnamed:_6"] = df["Unnamed:_6"].fillna(
-                                0
-                            )  # Default fill for 'Duration' column
+                            df["Unnamed:_5"] = df["Unnamed:_5"].fillna(0.0)
+                            df["Unnamed:_6"] = df["Unnamed:_6"].fillna(0)
 
-                            # For date columns, you can use forward-fill or backward-fill for missing dates
                             df["Planned"] = df["Planned"].fillna(method="ffill")
                             df["Actual"] = df["Actual"].fillna(method="ffill")
-                            df["Planned.1"] = df["Planned.1"].fillna(
-                                method="bfill"
-                            )  # Assuming backward fill is appropriate for this column
-                            df["Forecasted"] = df["Forecasted"].fillna(
-                                method="bfill"
-                            )  # Same as above
+                            df["Planned.1"] = df["Planned.1"].fillna(method="bfill")
+                            df["Forecasted"] = df["Forecasted"].fillna(method="bfill")
 
-                            # Check if there are any NaT values after conversion
                             if df["Planned"].isna().any():
                                 print(
                                     "Warning: Some 'PlannedStartDate' values could not be converted."
@@ -963,13 +886,10 @@ if "Subsidiary" in main_folder_list:
                                 }
                                 df.rename(columns=column_mapping, inplace=True)
 
-                                # Remove 'Created' column if it exists
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
                                     logging.info("'Created' column removed.")
 
-                                # Insert or update data into the database
-                                # table_name = sheet_to_table_map[sheet_name]
                                 table_name = "dbo.OP_ConstructionTimeline"
                                 existing_rows_query = f"""
                                                                      SELECT Milestone, Company
@@ -977,27 +897,21 @@ if "Subsidiary" in main_folder_list:
                                                                  """
                                 cursor.execute(existing_rows_query)
                                 rows = cursor.fetchall()
-                                existing_rows_set = {
-                                    tuple(row) for row in rows
-                                }  # Convert rows to tuples for hashing
+                                existing_rows_set = {tuple(row) for row in rows}
 
-                                # Step 2: Compare with DataFrame
                                 df_tuples = set(
                                     zip(
                                         df["Milestone"],
                                         df["Company"],
                                     )
-                                )  # Convert df to a set of tuples
+                                )
 
-                                missing_rows = (
-                                    df_tuples - existing_rows_set
-                                )  # Find missing rows
+                                missing_rows = df_tuples - existing_rows_set
                                 if missing_rows:
                                     logging.info(
                                         "Missing rows detected. Performing TRUNCATE + INSERT."
                                     )
 
-                                    # Step 3: Truncate the table before inserting new data
                                     truncate_query = (
                                         f"DELETE FROM {table_name} WHERE Company = ?;"
                                     )
@@ -1058,7 +972,7 @@ if "Subsidiary" in main_folder_list:
                                                            VALUES (?, ?, ?, ?, ?, ?, ?, ?);
                                                        END
                                                    """
-                                    # Ensure correct data types in the DataFrame
+
                                     for _, row in df.iterrows():
                                         try:
                                             row["PlannedStartDate"] = (
@@ -1093,7 +1007,6 @@ if "Subsidiary" in main_folder_list:
                                                 else 0.0
                                             )
 
-                                            # Prepare query placeholders
                                             placeholders = (
                                                 row["Milestone"],
                                                 row["Company"],
@@ -1158,7 +1071,7 @@ if "Subsidiary" in main_folder_list:
                                     "Tariff/MWh_(IDR)": "Tariff_MWh",
                                 }
                                 df.rename(columns=column_mapping, inplace=True)
-                                # Remove the 'Created' column if it exists
+
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
                                     logging.info(f"'Created' column removed.")
@@ -1168,8 +1081,6 @@ if "Subsidiary" in main_folder_list:
                                 ].fillna(0)
                                 df["Tariff_MWh"] = df["Tariff_MWh"].fillna(0)
 
-                                # Insert data into the defined table
-                                # table_name = sheet_to_table_map[sheet_name]
                                 table_name = "dbo.OP_AnnualyElectricityGeneration"
                                 existing_rows_query = f"""
                                                                      SELECT Year, Company
@@ -1177,24 +1088,16 @@ if "Subsidiary" in main_folder_list:
                                                                                  """
                                 cursor.execute(existing_rows_query)
                                 rows = cursor.fetchall()
-                                existing_rows_set = {
-                                    tuple(row) for row in rows
-                                }  # Convert rows to tuples for hashing
+                                existing_rows_set = {tuple(row) for row in rows}
 
-                                # Step 2: Compare with DataFrame
-                                df_tuples = set(
-                                    zip(df["Year"], df["Company"])
-                                )  # Convert df to a set of tuples
+                                df_tuples = set(zip(df["Year"], df["Company"]))
 
-                                missing_rows = (
-                                    df_tuples - existing_rows_set
-                                )  # Find missing rows
+                                missing_rows = df_tuples - existing_rows_set
                                 if missing_rows:
                                     logging.info(
                                         "Missing rows detected. Performing TRUNCATE + INSERT."
                                     )
 
-                                    # Step 3: Truncate the table before inserting new data
                                     truncate_query = (
                                         f"DELETE FROM {table_name} WHERE Company = ?;"
                                     )
@@ -1256,16 +1159,12 @@ if "Subsidiary" in main_folder_list:
                                         cursor.execute(
                                             update_insert_query,
                                             (
-                                                # For IF EXISTS condition
                                                 row["Year"],
                                                 row["Company"],
-                                                # For UPDATE clause
                                                 row["ContractedElectricityDelivered"],
                                                 row["Tariff_MWh"],
-                                                # WHERE conditions for UPDATE
                                                 row["Year"],
                                                 row["Company"],
-                                                # For INSERT INTO clause
                                                 row["Year"],
                                                 row["Company"],
                                                 row["ContractedElectricityDelivered"],
@@ -1297,7 +1196,7 @@ if "Subsidiary" in main_folder_list:
                             )
 
                             df = df.drop(columns=["Unnamed:_0"])
-                            # print(df.columns, "Monthly")
+
                             required_columns = [
                                 "Year",
                                 "Recorded Electricity Delivered (MWh)",
@@ -1318,13 +1217,11 @@ if "Subsidiary" in main_folder_list:
                                     "AF_(%)": "AFPercentage",
                                 }
                                 df.rename(columns=column_mapping, inplace=True)
-                                # Remove the 'Created' column if it exists
+
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
                                     logging.info(f"'Created' column removed.")
 
-                                # Insert data into the defined table
-                                # table_name = sheet_to_table_map[sheet_name]
                                 table_name = "dbo.OP_MonthlyElectricityGeneration"
                                 existing_rows_query = f"""
                                                                          SELECT Company, Month
@@ -1332,24 +1229,16 @@ if "Subsidiary" in main_folder_list:
                                                                      """
                                 cursor.execute(existing_rows_query)
                                 rows = cursor.fetchall()
-                                existing_rows_set = {
-                                    tuple(row) for row in rows
-                                }  # Convert rows to tuples for hashing
+                                existing_rows_set = {tuple(row) for row in rows}
 
-                                # Step 2: Compare with DataFrame
-                                df_tuples = set(
-                                    zip(df["Company"], df["Month"])
-                                )  # Convert df to a set of tuples
+                                df_tuples = set(zip(df["Company"], df["Month"]))
 
-                                missing_rows = (
-                                    df_tuples - existing_rows_set
-                                )  # Find missing rows
+                                missing_rows = df_tuples - existing_rows_set
                                 if missing_rows:
                                     logging.info(
                                         "Missing rows detected. Performing TRUNCATE + INSERT."
                                     )
 
-                                    # Step 3: Truncate the table before inserting new data
                                     truncate_query = (
                                         f"DELETE FROM {table_name} WHERE Company = ?;"
                                     )
@@ -1427,26 +1316,21 @@ if "Subsidiary" in main_folder_list:
                                     logging.info(
                                         "Beginning insertion into OP_Electricity Generation (Monthly) table."
                                     )
-                                    # Log the DataFrame columns
-                                    # print(f"Columns in DataFrame: {df.columns}")
+
                                     for _, row in df.iterrows():
                                         cursor.execute(
                                             update_insert_query,
                                             (
-                                                # For IF EXISTS condition
                                                 row["Company"],
                                                 row["Month"],
-                                                # For UPDATE clause
                                                 row["RecordedElectricityDelivered"],
                                                 row["CummulativeElectricityDelivered"],
                                                 row["SettledElectricityDelivered"],
                                                 row["SettlementVariance"],
                                                 row["CFPercentage"],
                                                 row["AFPercentage"],
-                                                # WHERE conditions for UPDATE
                                                 row["Company"],
                                                 row["Month"],
-                                                # For INSERT INTO clause
                                                 row["Company"],
                                                 row["Year"],
                                                 row["RecordedElectricityDelivered"],
@@ -1482,9 +1366,7 @@ if "Subsidiary" in main_folder_list:
                                 "Special processing for 'Electricity Generation (Daily)' sheet."
                             )
                             df = df.drop(columns=["Unnamed:_0"])
-                            df["Date"] = pd.to_datetime(
-                                df["Date"], errors="coerce"
-                            )  # Converts invalid dates to NaT (null)
+                            df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
 
                             required_columns = [
                                 "Date",
@@ -1500,7 +1382,7 @@ if "Subsidiary" in main_folder_list:
                                     "Progress_bar": "ProgressBar",
                                 }
                                 df.rename(columns=column_mapping, inplace=True)
-                                # Remove the 'Created' column if it exists
+
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
                                     logging.info(f"'Created' column removed.")
@@ -1513,23 +1395,16 @@ if "Subsidiary" in main_folder_list:
                                                                 """
                                 cursor.execute(existing_rows_query)
                                 rows = cursor.fetchall()
-                                existing_rows_set = {
-                                    tuple(row) for row in rows
-                                }  # Convert rows to tuples for hashing
+                                existing_rows_set = {tuple(row) for row in rows}
 
-                                # Step 2: Compare with DataFrame
-                                df_tuples = set(
-                                    zip(df["Date"], df["Company"])
-                                )  # Convert df to a set of tuples
+                                df_tuples = set(zip(df["Date"], df["Company"]))
 
-                                missing_rows = (
-                                    df_tuples - existing_rows_set
-                                )  # Find missing rows
+                                missing_rows = df_tuples - existing_rows_set
                                 if missing_rows:
                                     logging.info(
                                         "Missing rows detected. Performing TRUNCATE + INSERT."
                                     )
-                                    # Step 3: Truncate the table before inserting new data
+
                                     truncate_query = (
                                         f"DELETE FROM {table_name} WHERE Company = ?;"
                                     )
@@ -1595,17 +1470,13 @@ if "Subsidiary" in main_folder_list:
                                         cursor.execute(
                                             update_insert_query,
                                             (
-                                                # For IF EXISTS condition
                                                 row["Date"],
                                                 row["Company"],
-                                                # For UPDATE clause
                                                 row["DailyElectricityGenerated"],
                                                 row["CummulativeElectricityDelivered"],
                                                 row["ProgressBar"],
-                                                # WHERE conditions for UPDATE
                                                 row["Date"],
                                                 row["Company"],
-                                                # For INSERT INTO clause
                                                 row["Date"],
                                                 row["Company"],
                                                 row["DailyElectricityGenerated"],
@@ -1650,13 +1521,11 @@ if "Subsidiary" in main_folder_list:
                                     "Mandated_Days_of_Coal_Stockpile": "MandatedDaysOfCoalStockpile",
                                 }
                                 df.rename(columns=column_mapping, inplace=True)
-                                # Remove the 'Created' column if it exists
+
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
                                     logging.info(f"'Created' column removed.")
 
-                                # Insert data into the defined table
-                                # table_name = sheet_to_table_map[sheet_name]
                                 table_name = "dbo.OP_CoalStockpileDaily"
                                 existing_rows_query = f"""
                                                                         SELECT Company, Date
@@ -1664,24 +1533,16 @@ if "Subsidiary" in main_folder_list:
                                                                     """
                                 cursor.execute(existing_rows_query)
                                 rows = cursor.fetchall()
-                                existing_rows_set = {
-                                    tuple(row) for row in rows
-                                }  # Convert rows to tuples for hashing
+                                existing_rows_set = {tuple(row) for row in rows}
 
-                                # Step 2: Compare with DataFrame
-                                df_tuples = set(
-                                    zip(df["Company"], df["Date"])
-                                )  # Convert df to a set of tuples
+                                df_tuples = set(zip(df["Company"], df["Date"]))
 
-                                missing_rows = (
-                                    df_tuples - existing_rows_set
-                                )  # Find missing rows
+                                missing_rows = df_tuples - existing_rows_set
                                 if missing_rows:
                                     logging.info(
                                         "Missing rows detected. Performing TRUNCATE + INSERT."
                                     )
 
-                                    # Step 3: Truncate the table before inserting new data
                                     truncate_query = (
                                         f"DELETE FROM {table_name} WHERE Company = ?;"
                                     )
@@ -1747,16 +1608,12 @@ if "Subsidiary" in main_folder_list:
                                         cursor.execute(
                                             update_insert_query,
                                             (
-                                                # For IF EXISTS condition
                                                 row["Company"],
                                                 row["Date"],
-                                                # For UPDATE clause
                                                 row["CoalStockpileDays"],
                                                 row["MandatedDaysOfCoalStockpile"],
-                                                # WHERE conditions for UPDATE
                                                 row["Company"],
                                                 row["Date"],
-                                                # For INSERT INTO clause
                                                 row["Company"],
                                                 row["Date"],
                                                 row["CoalStockpileDays"],
@@ -1819,13 +1676,11 @@ if "Subsidiary" in main_folder_list:
                                     "Required_Availability_Percentage": "RequiredAvailabilityPercentage",
                                 }
                                 df.rename(columns=column_mapping, inplace=True)
-                                # Remove the 'Created' column if it exists
+
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
                                     logging.info(f"'Created' column removed.")
 
-                                # Insert data into the defined table
-                                # table_name = sheet_to_table_map[sheet_name]
                                 table_name = "dbo.OP_MonthlyOutagesAndAvailability"
                                 existing_rows_query = f"""
                                                                          SELECT Company, Month
@@ -1833,18 +1688,10 @@ if "Subsidiary" in main_folder_list:
                                                                      """
                                 cursor.execute(existing_rows_query)
                                 rows = cursor.fetchall()
-                                existing_rows_set = {
-                                    tuple(row) for row in rows
-                                }  # Convert rows to tuples for hashing
+                                existing_rows_set = {tuple(row) for row in rows}
 
-                                # Step 2: Compare with DataFrame
-                                df_tuples = set(
-                                    zip(df["Company"], df["Month"])
-                                )  # Convert df to a set of tuples
-
-                                missing_rows = (
-                                    df_tuples - existing_rows_set
-                                )  # Find missing rows
+                                df_tuples = set(zip(df["Company"], df["Month"]))
+                                missing_rows = df_tuples - existing_rows_set
                                 if missing_rows:
                                     logging.info(
                                         "Missing rows detected. Performing TRUNCATE + INSERT."
@@ -1957,10 +1804,8 @@ if "Subsidiary" in main_folder_list:
                                         cursor.execute(
                                             update_insert_query,
                                             (
-                                                # For IF EXISTS condition
                                                 row["Company"],
                                                 row["Month"],
-                                                # For UPDATE clause
                                                 row["Year"],
                                                 row["MaintenanceOutageHours"],
                                                 row["MaintenanceOutagePercentage"],
@@ -1972,10 +1817,8 @@ if "Subsidiary" in main_folder_list:
                                                 row["PermittedOutageHours"],
                                                 row["AvailabilityPercentage"],
                                                 row["RequiredAvailabilityPercentage"],
-                                                # WHERE conditions for UPDATE
                                                 row["Company"],
                                                 row["Month"],
-                                                # For INSERT INTO clause
                                                 row["Company"],
                                                 row["Month"],
                                                 row["Year"],
@@ -2014,11 +1857,8 @@ if "Subsidiary" in main_folder_list:
                             logging.info(
                                 "Special processing for 'Env - Scope 1 & 2 Emissions'"
                             )
-                            # table_name = '[dbo].[Env-Scope1&2Emissions]'
 
-                            # print("Env-Scope1&2Emissions", df.columns)
                             df = df.drop(columns=["Unnamed:_0"])
-                            # Clean the column names to remove leading/trailing spaces
                             df.columns = df.columns.str.strip()
                             required_columns = [
                                 "Month",
@@ -2035,12 +1875,9 @@ if "Subsidiary" in main_folder_list:
                                 }
                                 df.rename(columns=column_mapping, inplace=True)
 
-                                # Remove the 'Created' column if it exists
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
                                     logging.info(f"'Created' column removed.")
-
-                                # table_name = sheet_to_table_map[sheet_name]
 
                                 table_name = "[dbo].[SubsidiaryEnv-Scope1&2Emissions]"
                                 existing_rows_query = f"""
@@ -2049,14 +1886,9 @@ if "Subsidiary" in main_folder_list:
                                                                                  """
                                 cursor.execute(existing_rows_query)
                                 rows = cursor.fetchall()
-                                existing_rows_set = {
-                                    tuple(row) for row in rows
-                                }  # Convert rows to tuples for hashing
+                                existing_rows_set = {tuple(row) for row in rows}
 
-                                # Step 2: Compare with DataFrame
-                                df_tuples = set(
-                                    zip(df["Company"], df["Month"])
-                                )  # Convert df to a set of tuples
+                                df_tuples = set(zip(df["Company"], df["Month"]))
 
                                 missing_rows = df_tuples - existing_rows_set
                                 if missing_rows:
@@ -2064,7 +1896,6 @@ if "Subsidiary" in main_folder_list:
                                         "Missing rows detected. Performing TRUNCATE + INSERT."
                                     )
 
-                                    # Step 3: Truncate the table before inserting new data
                                     truncate_query = (
                                         f"DELETE FROM {table_name} WHERE Company = ?;"
                                     )
@@ -2112,23 +1943,19 @@ if "Subsidiary" in main_folder_list:
                                     logging.info(
                                         "Beginning insertion into Env-Scope1&2Emissions table."
                                     )
-                                    # Log the DataFrame columns
-                                    # print(f"Columns in DataFrame: {df.columns}")
+
                                     for _, row in df.iterrows():
-                                        # Define the placeholders for this row
+
                                         cursor.execute(
                                             update_insert_query,
                                             (
-                                                # For IF EXISTS condition
                                                 row["Company"],
                                                 row["Month"],
-                                                # For UPDATE clause
                                                 row["Scope1_tCO2e"],
                                                 row["Scope2_tCO2e"],
                                                 row["Total_Scope1&2"],
                                                 row["Company"],
                                                 row["Month"],
-                                                # For INSERT INTO clause
                                                 row["Company"],
                                                 row["Month"],
                                                 row["Scope1_tCO2e"],
@@ -2254,18 +2081,15 @@ if "Subsidiary" in main_folder_list:
                                         "Beginning insertion into ENV-Utilites table."
                                     )
                                     for _, row in df.iterrows():
-                                        # Define the placeholders for this row
+
                                         placeholders = (
-                                            # For IF EXISTS condition
                                             row["Company"],
                                             row["Month"],
-                                            # For UPDATE clause
                                             row["Subsi_ElectricityUsage(Wh)"],
                                             row["Subsi_ActualWaterConsumption(m3)"],
                                             row["Subsi_ActualFuelConsumption(L)"],
                                             row["Company"],
                                             row["Month"],
-                                            # For INSERT INTO clause
                                             row["Company"],
                                             row["Month"],
                                             row["Subsi_ElectricityUsage(Wh)"],
@@ -2319,12 +2143,10 @@ if "Subsidiary" in main_folder_list:
                                 }
                                 df.rename(columns=column_mapping, inplace=True)
 
-                                # Remove the 'Created' column if it exists
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
                                     logging.info(f"'Created' column removed.")
 
-                                # table_name = sheet_to_table_map[sheet_name]
                                 table_name = "[dbo].[SubsidiarySocial-EmployeeByGender]"
                                 logging.info(f"Table name set to: {table_name}")
 
@@ -2335,24 +2157,15 @@ if "Subsidiary" in main_folder_list:
 
                                 cursor.execute(existing_rows_query)
                                 rows = cursor.fetchall()
-                                existing_rows_set = {
-                                    tuple(row) for row in rows
-                                }  # Convert rows to tuples for hashing
+                                existing_rows_set = {tuple(row) for row in rows}
 
-                                # Step 2: Compare with DataFrame
-                                df_tuples = set(
-                                    zip(df["Company"], df["Month"])
-                                )  # Convert df to a set of tuples
-
-                                missing_rows = (
-                                    df_tuples - existing_rows_set
-                                )  # Find missing rows
+                                df_tuples = set(zip(df["Company"], df["Month"]))
+                                missing_rows = df_tuples - existing_rows_set
                                 if missing_rows:
                                     logging.info(
                                         "Missing rows detected. Performing TRUNCATE + INSERT."
                                     )
 
-                                    # Step 3: Truncate the table before inserting new data
                                     truncate_query = (
                                         f"DELETE FROM {table_name} WHERE Company = ?;"
                                     )
@@ -2424,15 +2237,12 @@ if "Subsidiary" in main_folder_list:
                                     logging.info(
                                         "Beginning insertion into Social-EmployeeByGender table."
                                     )
-                                    # Log the DataFrame columns
-                                    # print(f"Columns in DataFrame: {df.columns}")
+
                                     for _, row in df.iterrows():
-                                        # Define the placeholders for this row
+
                                         placeholders = (
-                                            # For IF EXISTS condition
                                             row["Company"],
                                             row["Month"],
-                                            # For UPDATE clause
                                             row["Total_Male"],
                                             row["Total_Female"],
                                             row["NewHire_Male"],
@@ -2441,7 +2251,6 @@ if "Subsidiary" in main_folder_list:
                                             row["Turnover_Female"],
                                             row["Company"],
                                             row["Month"],
-                                            # For INSERT INTO clause
                                             row["Company"],
                                             row["Month"],
                                             row["Total_Male"],
@@ -2476,8 +2285,6 @@ if "Subsidiary" in main_folder_list:
                                 "Special processing for 'Social - Employee by Age'"
                             )
 
-                            # table_name = '[dbo].[Social-EmployeeByAge]'
-
                             df = df.drop(columns=["Unnamed:_0"])
 
                             required_columns = [
@@ -2498,16 +2305,6 @@ if "Subsidiary" in main_folder_list:
 
                             for col in required_columns:
 
-                                # if col not in df.columns:
-
-                                #     logging.error(
-
-                                #         f"Missing required column '{col}' in Social-EmployeeByAge")
-
-                                #     continue
-
-                                # Rename columns to match the database schema if necessary
-
                                 column_mapping = {
                                     "Month": "Month",
                                     "Total_<35": "Total_<35",
@@ -2526,16 +2323,10 @@ if "Subsidiary" in main_folder_list:
 
                                 df.rename(columns=column_mapping, inplace=True)
 
-                                # Remove the 'Created' column if it exists
-
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
 
                                     logging.info(f"'Created' column removed.")
-
-                                # Insert data into the defined table
-
-                                # table_name = sheet_to_table_map[sheet_name]
 
                                 table_name = "[dbo].[SubsidiarySocial-EmployeeByAge]"
 
@@ -2553,19 +2344,10 @@ if "Subsidiary" in main_folder_list:
 
                                 rows = cursor.fetchall()
 
-                                existing_rows_set = {
-                                    tuple(row) for row in rows
-                                }  # Convert rows to tuples for hashing
+                                existing_rows_set = {tuple(row) for row in rows}
+                                df_tuples = set(zip(df["Company"], df["Month"]))
 
-                                # Step 2: Compare with DataFrame
-
-                                df_tuples = set(
-                                    zip(df["Company"], df["Month"])
-                                )  # Convert df to a set of tuples
-
-                                missing_rows = (
-                                    df_tuples - existing_rows_set
-                                )  # Find missing rows
+                                missing_rows = df_tuples - existing_rows_set
 
                                 if missing_rows:
 
@@ -2573,9 +2355,6 @@ if "Subsidiary" in main_folder_list:
                                         "Missing rows detected. Performing TRUNCATE + INSERT."
                                     )
 
-                                    # Step 3: Truncate the table before inserting new data
-
-                                    # Step 3: Truncate the table before inserting new data
                                     truncate_query = (
                                         f"DELETE FROM {table_name} WHERE Company = ?;"
                                     )
@@ -2598,7 +2377,7 @@ if "Subsidiary" in main_folder_list:
                                             insert_query,
                                             (
                                                 row["Company"],
-                                                row["Month"],  # For UPDATE clause
+                                                row["Month"],
                                                 row["Total_<35"],
                                                 row["Total_35-50"],
                                                 row["Total_51-63"],
@@ -2705,10 +2484,8 @@ if "Subsidiary" in main_folder_list:
                                         cursor.execute(
                                             update_insert_query,
                                             (
-                                                # For IF EXISTS condition
                                                 row["Company"],
                                                 row["Month"],
-                                                # For UPDATE clause
                                                 row["Total_<35"],
                                                 row["Total_35-50"],
                                                 row["Total_51-63"],
@@ -2723,7 +2500,6 @@ if "Subsidiary" in main_folder_list:
                                                 row["Turnover_>63"],
                                                 row["Company"],
                                                 row["Month"],
-                                                # For INSERT INTO clause
                                                 row["Company"],
                                                 row["Month"],
                                                 row["Total_<35"],
@@ -2763,13 +2539,11 @@ if "Subsidiary" in main_folder_list:
                         try:
                             logging.info("Special processing for 'Social - CSR'")
                             company_name = df["Company"].iloc[0]
-                            # Drop unnecessary columns
+
                             df = df.drop(columns=["Unnamed:_0", "Unnamed:_5"])
 
-                            # Clean column names
                             df.columns = df.columns.str.strip()
 
-                            # Define required columns and rename
                             column_mapping = {
                                 "Month": "Month",
                                 "CSR__Project_Name": "CSR_ProjectName",
@@ -2778,14 +2552,12 @@ if "Subsidiary" in main_folder_list:
                             }
                             df.rename(columns=column_mapping, inplace=True)
 
-                            # Remove the 'Created' column if it exists
                             if "Created" in df.columns:
                                 df.drop(columns=["Created"], inplace=True)
                                 logging.info(f"'Created' column removed.")
 
                             table_name = "[dbo].[SubsidiarySocial-CSR]"
 
-                            # Step 1: Check if the sheet has rows that are NOT in the database
                             existing_rows_query = f"""
                                                                     SELECT Company, Month
                                                                      FROM {table_name}
@@ -2793,25 +2565,17 @@ if "Subsidiary" in main_folder_list:
 
                             cursor.execute(existing_rows_query)
                             rows = cursor.fetchall()
-                            existing_rows_set = {
-                                tuple(row) for row in rows
-                            }  # Convert rows to tuples for hashing
+                            existing_rows_set = {tuple(row) for row in rows}
 
-                            # Step 2: Compare with DataFrame
-                            df_tuples = set(
-                                zip(df["Company"], df["Month"])
-                            )  # Convert df to a set of tuples
+                            df_tuples = set(zip(df["Company"], df["Month"]))
 
-                            missing_rows = (
-                                df_tuples - existing_rows_set
-                            )  # Find missing rows
+                            missing_rows = df_tuples - existing_rows_set
 
                             if missing_rows:
                                 logging.info(
                                     "Missing rows detected. Performing TRUNCATE + INSERT."
                                 )
 
-                                # Step 3: Truncate the table before inserting new data
                                 truncate_query = (
                                     f"DELETE FROM {table_name} WHERE Company = ?;"
                                 )
@@ -2871,7 +2635,6 @@ if "Subsidiary" in main_folder_list:
                                         ),
                                     )
 
-                            # Commit the transaction
                             conn.commit()
                             logging.info(
                                 f"Data from sheet '{sheet_name}' inserted into table '{table_name}' successfully."
@@ -2896,10 +2659,9 @@ if "Subsidiary" in main_folder_list:
                             logging.info(
                                 "Special processing for 'Gov - Management Diversity'"
                             )
-                            # table_name = '[dbo].[Gov-ManagementDiversity]'
-                            # print("Gov - Management Diversity", df.columns)
+
                             df = df.drop(columns=["Unnamed:_0"])
-                            # Clean the column names to remove leading/trailing spaces
+
                             df.columns = df.columns.str.strip()
                             required_columns = [
                                 "Month",
@@ -2918,13 +2680,9 @@ if "Subsidiary" in main_folder_list:
                                 }
                                 df.rename(columns=column_mapping, inplace=True)
 
-                                # Remove the 'Created' column if it exists
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
                                     logging.info(f"'Created' column removed.")
-
-                                # Insert data into the defined table
-                                # table_name = sheet_to_table_map[sheet_name]
 
                                 table_name = "[dbo].[SubsidiaryGov-ManagementDiversity]"
                                 logging.info(f"Table name set to: {table_name}")
@@ -2936,24 +2694,15 @@ if "Subsidiary" in main_folder_list:
 
                                 cursor.execute(existing_rows_query)
                                 rows = cursor.fetchall()
-                                existing_rows_set = {
-                                    tuple(row) for row in rows
-                                }  # Convert rows to tuples for hashing
+                                existing_rows_set = {tuple(row) for row in rows}
 
-                                # Step 2: Compare with DataFrame
-                                df_tuples = set(
-                                    zip(df["Company"], df["Month"])
-                                )  # Convert df to a set of tuples
-                                missing_rows = (
-                                    df_tuples - existing_rows_set
-                                )  # Find missing rows
+                                df_tuples = set(zip(df["Company"], df["Month"]))
+                                missing_rows = df_tuples - existing_rows_set
                                 if missing_rows:
                                     logging.info(
                                         "Missing rows detected. Performing TRUNCATE + INSERT."
                                     )
 
-                                    # Step 3: Truncate the table before inserting new data
-                                    # Step 3: Truncate the table before inserting new data
                                     truncate_query = (
                                         f"DELETE FROM {table_name} WHERE Company = ?;"
                                     )
@@ -3019,22 +2768,18 @@ if "Subsidiary" in main_folder_list:
                                 logging.info(
                                     "Beginning insertion into Gov-ManagementDiversity table."
                                 )
-                                # Log the DataFrame columns
-                                # print(f"Columns in DataFrame: {df.columns}")
+
                                 for _, row in df.iterrows():
-                                    # Define the placeholders for this row
+
                                     placeholders = (
-                                        # For IF EXISTS condition
                                         row["Company"],
                                         row["Month"],
-                                        # For UPDATE clause
                                         row["Senior_Male"],
                                         row["Senior_Female"],
                                         row["Middle_Male"],
                                         row["Middle_Female"],
                                         row["Company"],
                                         row["Month"],
-                                        # For INSERT INTO clause
                                         row["Company"],
                                         row["Month"],
                                         row["Senior_Male"],
@@ -3096,7 +2841,6 @@ if "Subsidiary" in main_folder_list:
                                 }
                                 df.rename(columns=column_mapping, inplace=True)
 
-                                # Remove the 'Created' column if it exists
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
                                     logging.info(f"'Created' column removed.")
@@ -3111,9 +2855,7 @@ if "Subsidiary" in main_folder_list:
                                             f"Failed to convert 'FY' column to integers: {ve}"
                                         )
                                         raise
-                                # Insert data into the defined table
-                                # table_name = sheet_to_table_map[sheet_name]
-                                # Replace blank and '-' values in specific columns
+
                                 df["BoardIndependencePercentage"] = pd.to_numeric(
                                     df["BoardIndependencePercentage"], errors="coerce"
                                 )
@@ -3135,17 +2877,12 @@ if "Subsidiary" in main_folder_list:
 
                                 cursor.execute(existing_rows_query)
                                 rows = cursor.fetchall()
-                                existing_rows_set = {
-                                    tuple(row) for row in rows
-                                }  # Convert rows to tuples for hashing
+                                existing_rows_set = {tuple(row) for row in rows}
 
-                                # Step 2: Compare with DataFrame
                                 df_tuples = set(
                                     zip(df["Company"], df["Name"], df["Year"])
-                                )  # Convert df to a set of tuples
-                                missing_rows = (
-                                    df_tuples - existing_rows_set
-                                )  # Find missing rows
+                                )
+                                missing_rows = df_tuples - existing_rows_set
                                 logging.info(f"Table name set to: {table_name}")
                                 if missing_rows:
                                     logging.info(
@@ -3289,7 +3026,6 @@ if "Subsidiary" in main_folder_list:
                                 }
                                 df.rename(columns=column_mapping, inplace=True)
 
-                                # Remove the 'Created' column if it exists
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
                                     logging.info(f"'Created' column removed.")
@@ -3303,24 +3039,15 @@ if "Subsidiary" in main_folder_list:
 
                                 cursor.execute(existing_rows_query)
                                 rows = cursor.fetchall()
-                                existing_rows_set = {
-                                    tuple(row) for row in rows
-                                }  # Convert rows to tuples for hashing
-                                # Step 2: Compare with DataFrame
-                                df_tuples = set(
-                                    zip(df["FY"], df["Company"])
-                                )  # Convert df to a set of tuples
-
-                                missing_rows = (
-                                    existing_rows_set - df_tuples
-                                )  # Find missing rows
+                                existing_rows_set = {tuple(row) for row in rows}
+                                df_tuples = set(zip(df["FY"], df["Company"]))
+                                missing_rows = existing_rows_set - df_tuples
 
                                 if missing_rows:
                                     logging.info(
                                         "Missing rows detected. Performing TRUNCATE + INSERT."
                                     )
 
-                                    # Step 3: Truncate the table before inserting new data
                                     truncate_query = (
                                         f"DELETE FROM {table_name} WHERE Company = ?;"
                                     )
@@ -3400,17 +3127,14 @@ if "Subsidiary" in main_folder_list:
                                     logging.info(
                                         f"Beginning insertion into {table_name}."
                                     )
-                                    # Log the DataFrame columns
-                                    # print(f"Columns in DataFrame: {df.columns}")
+
                                     for _, row in df.iterrows():
-                                        # Define the placeholders for this row
+
                                         cursor.execute(
                                             update_insert_query,
                                             (
-                                                # For IF EXISTS condition
                                                 row["FY"],
                                                 row["Company"],
-                                                # For UPDATE clause
                                                 row["Scope1_Threshold_tCO2"],
                                                 row["Projected_Scope1t_CO2"],
                                                 row["TurnoverTarget"],
@@ -3420,7 +3144,6 @@ if "Subsidiary" in main_folder_list:
                                                 row["Subsi_WaterConsumptionTarget(L)"],
                                                 row["FY"],
                                                 row["Company"],
-                                                # For INSERT INTO clause
                                                 row["FY"],
                                                 row["Company"],
                                                 row["Scope1_Threshold_tCO2"],

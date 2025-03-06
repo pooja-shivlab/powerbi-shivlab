@@ -2,12 +2,12 @@ from Common_powerBI import *
 
 if "Parent" in main_folder_list:
     logging.info("Processing 'Parent' folder.")
-    # Process only the "Parent" folder and its subfolders
+
     xlsx_files = process_subfolders(
         ctx, parent_path="/sites/Dashboard-UAT/Shared%20Documents/Parent"
     )
-    all_xlsx_files.extend(xlsx_files)  # Add the results from Parent
-    sheet_to_table_map = sheet_to_table_map_client_a  # Use the correct mapping
+    all_xlsx_files.extend(xlsx_files)
+    sheet_to_table_map = sheet_to_table_map_client_a
     parent_path = "/sites/Dashboard-UAT/Shared%20Documents/Parent"
     subfolders = get_subfolders(ctx, parent_path)
 
@@ -15,14 +15,8 @@ if "Parent" in main_folder_list:
         subfolder_path = f"{parent_path}/{subfolder}"
         global_subfolder = subfolder
 
-        # Extract Dashboard name from subfolder path (assuming it's the last part)
-
-        # Get XLSX files for the current subfolder
         xlsx_files = process_subfolders(ctx, parent_path=subfolder_path)
-        all_xlsx_files.extend(
-            xlsx_files
-        )  # Ensure files are mapped to correct subfolder
-
+        all_xlsx_files.extend(xlsx_files)
         dashboard_folders = get_subfolders(ctx, subfolder_path)
 
         sheet_status = {}
@@ -34,19 +28,17 @@ if "Parent" in main_folder_list:
             ]
             dashboard_file_map[dashboard] = dashboard_files
 
-            # Process all files in the current folder
             for file in xlsx_files:
-                # Download the file locally
+
                 target_file = ctx.web.get_file_by_server_relative_url(file)
                 with open("local_copy.xlsx", "wb") as local_file:
                     target_file.download(local_file).execute_query()
 
-                # Load the workbook to inspect sheet names
                 xls = pd.ExcelFile("local_copy.xlsx")
                 sheet_names = xls.sheet_names
 
                 logging.info(f"Sheet names in the workbook: {sheet_names}")
-                # Skip the "Preface" sheet if present
+
                 if "Preface" in sheet_names:
                     sheet_names.remove("Preface")
 
@@ -59,7 +51,7 @@ if "Parent" in main_folder_list:
                         "Construction Timeline",
                     ]:
                         skiprows = 3
-                        header = 0  # First row after skipping rows becomes header
+                        header = 0
                     elif sheet_name in [
                         "Electricity Generation (monthly",
                         "Outages & Availability (Monthly",
@@ -74,7 +66,7 @@ if "Parent" in main_folder_list:
                     ]:
                         skiprows = 1
                         if sheet_name in ["Project Expenses"]:
-                            header = [0, 1]  # Combined header from rows 3 and 4
+                            header = [0, 1]
                         else:
                             header = 0
                     elif sheet_name == "Electricity Generation (Annualy":
@@ -104,7 +96,7 @@ if "Parent" in main_folder_list:
                         "Debt Management",
                     ]:
                         logging.info(f"Skipping sheet: {sheet_name}")
-                        continue  # Skip processing this sheet
+                        continue
                     else:
                         print("Skipped 4 lines")
                         skiprows = 4
@@ -125,7 +117,6 @@ if "Parent" in main_folder_list:
                         header=header,
                     )
 
-                    # Step 6: Add inferred dashboard and company to DataFrame
                     df["Company"] = subfolder
                     df["Dashboard"] = inferred_dashboard
                     df.columns = (
@@ -134,16 +125,15 @@ if "Parent" in main_folder_list:
                         .str.replace(r"[^a-zA-Z0-9_]", "")
                     )
 
-                    # Step 7: Log success
                     sheet_status[(inferred_dashboard, sheet_name)] = {
                         "Status": "Success",
                         "Description": "Sheet processed successfully",
                     }
 
                     if sheet_name in ["Project Expenses"]:
-                        # Check if the sheet requires flattening
+
                         if isinstance(df.columns, pd.MultiIndex):
-                            # Flatten MultiIndex for specific sheets only
+
                             df.columns = [
                                 " ".join(col).strip() for col in df.columns.values
                             ]
@@ -159,7 +149,6 @@ if "Parent" in main_folder_list:
                         .str.replace(r"[^a-zA-Z0-9_]", "")
                     )
 
-                    # Replace NaN values with 0 for numeric columns
                     df.fillna(0, inplace=True)
 
                     if sheet_name == "Operation Overview":
@@ -193,12 +182,11 @@ if "Parent" in main_folder_list:
                                     "Langitude": "Langitude",
                                 }
                                 df.rename(columns=column_mapping, inplace=True)
-                                # Remove the 'Created' column if it exists
+
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
                                     logging.info(f"'Created' column removed.")
 
-                                # Insert data into the defined table
                                 table_name = "[dbo].[OperationOverview]"
                                 df["Subsidiary_Name"] = df["Subsidiary_Name"].apply(
                                     lambda x: str(x) if not isinstance(x, str) else x
@@ -207,15 +195,14 @@ if "Parent" in main_folder_list:
                                     escape_special_characters
                                 )
 
-                                # Ensure the Project column is treated as a string
                                 df["Project"] = df["Project"].apply(
                                     lambda x: str(x) if not isinstance(x, str) else x
                                 )
-                                # Before inserting the 'Project' column data, apply the escaping
+
                                 df["Project"] = df["Project"].apply(
                                     escape_special_characters
                                 )
-                                # Insert data into the defined table
+
                                 df["Subsidiary_Name"] = (
                                     df["Subsidiary_Name"]
                                     .astype(str)
@@ -259,7 +246,6 @@ if "Parent" in main_folder_list:
                                         .values.tolist()
                                     )
 
-                                # Step 1: Check if the sheet has rows that are NOT in the database
                                 existing_rows_query = f"""
                                                                        SELECT Subsidiary_Name, Project 
                                                                        FROM {table_name}
@@ -268,7 +254,6 @@ if "Parent" in main_folder_list:
                                 rows = cursor.fetchall()
                                 existing_rows_set = {tuple(row) for row in rows}
 
-                                # Step 2: Compare with DataFrame
                                 df_tuples = set(
                                     zip(df["Subsidiary_Name"], df["Project"])
                                 )
@@ -280,7 +265,6 @@ if "Parent" in main_folder_list:
                                         "Missing rows detected. Performing TRUNCATE + INSERT."
                                     )
 
-                                    # Step 3: Truncate the table before inserting new data
                                     truncate_query = f"TRUNCATE TABLE {table_name};"
                                     cursor.execute(truncate_query)
 
@@ -373,7 +357,7 @@ if "Parent" in main_folder_list:
                                 "Special processing for 'Env - Scope 1 & 2 Emissions'"
                             )
                             df = df.drop(columns=["Unnamed:_0"])
-                            # Clean the column names to remove leading/trailing spaces
+
                             df.columns = df.columns.str.strip()
                             required_columns = [
                                 "Month",
@@ -390,7 +374,6 @@ if "Parent" in main_folder_list:
                                 }
                                 df.rename(columns=column_mapping, inplace=True)
 
-                                # Remove the 'Created' column if it exists
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
                                     logging.info(f"'Created' column removed.")
@@ -404,7 +387,6 @@ if "Parent" in main_folder_list:
                                 rows = cursor.fetchall()
                                 existing_rows_set = {tuple(row) for row in rows}
 
-                                # Step 2: Compare with DataFrame
                                 df_tuples = set(zip(df["Company"], df["Month"]))
 
                                 missing_rows = df_tuples - existing_rows_set
@@ -459,20 +441,17 @@ if "Parent" in main_folder_list:
                                         "Beginning insertion into Env-Scope1&2Emissions table."
                                     )
                                     for _, row in df.iterrows():
-                                        # Define the placeholders for this row
+
                                         cursor.execute(
                                             update_insert_query,
                                             (
-                                                # For IF EXISTS condition
                                                 row["Company"],
                                                 row["Month"],
-                                                # For UPDATE clause
                                                 row["Scope1_tCO2e"],
                                                 row["Scope2_tCO2e"],
                                                 row["Total_Scope1&2"],
                                                 row["Company"],
                                                 row["Month"],
-                                                # For INSERT INTO clause
                                                 row["Company"],
                                                 row["Month"],
                                                 row["Scope1_tCO2e"],
@@ -533,13 +512,8 @@ if "Parent" in main_folder_list:
                                 rows = cursor.fetchall()
                                 existing_rows_set = {tuple(row) for row in rows}
 
-                                # Step 2: Compare with DataFrame
-                                df_tuples = set(
-                                    zip(df["Company"], df["Month"])
-                                )  # Convert df to a set of tuples
-                                missing_rows = (
-                                    df_tuples - existing_rows_set
-                                )  # Find missing rows
+                                df_tuples = set(zip(df["Company"], df["Month"]))
+                                missing_rows = df_tuples - existing_rows_set
                                 if missing_rows:
                                     logging.info(
                                         "Missing rows detected. Performing TRUNCATE + INSERT."
@@ -598,18 +572,14 @@ if "Parent" in main_folder_list:
                                     )
 
                                     for _, row in df.iterrows():
-                                        # Define the placeholders for this row
                                         placeholders = (
-                                            # For IF EXISTS condition
                                             row["Company"],
                                             row["Month"],
-                                            # For UPDATE clause
                                             row["IPRen_ElectricityUsage(Wh)"],
                                             row["IPRen_ActualWaterConsumption(m3)"],
                                             row["IPRen_ActualFuelConsumption(L)"],
                                             row["Company"],
                                             row["Month"],
-                                            # For INSERT INTO clause
                                             row["Company"],
                                             row["Month"],
                                             row["IPRen_ElectricityUsage(Wh)"],
@@ -662,12 +632,10 @@ if "Parent" in main_folder_list:
                                 }
                                 df.rename(columns=column_mapping, inplace=True)
 
-                                # Remove the 'Created' column if it exists
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
                                     logging.info(f"'Created' column removed.")
 
-                                # table_name = sheet_to_table_map[sheet_name]
                                 table_name = "[dbo].[Social-EmployeeByGender]"
                                 logging.info(f"Table name set to: {table_name}")
 
@@ -680,17 +648,14 @@ if "Parent" in main_folder_list:
                                 rows = cursor.fetchall()
                                 existing_rows_set = {tuple(row) for row in rows}
 
-                                # Step 2: Compare with DataFrame
                                 df_tuples = set(zip(df["Company"], df["Month"]))
 
-                                missing_rows = (
-                                    df_tuples - existing_rows_set
-                                )  # Find missing rows
+                                missing_rows = df_tuples - existing_rows_set
                                 if missing_rows:
                                     logging.info(
                                         "Missing rows detected. Performing TRUNCATE + INSERT."
                                     )
-                                    # Step 3: Truncate the table before inserting new data
+
                                     truncate_query = f"TRUNCATE TABLE {table_name};"
                                     cursor.execute(truncate_query)
 
@@ -760,12 +725,10 @@ if "Parent" in main_folder_list:
                                         "Beginning insertion into Social-EmployeeByGender table."
                                     )
                                     for _, row in df.iterrows():
-                                        # Define the placeholders for this row
+
                                         placeholders = (
-                                            # For IF EXISTS condition
                                             row["Company"],
                                             row["Month"],
-                                            # For UPDATE clause
                                             row["Total_Male"],
                                             row["Total_Female"],
                                             row["NewHire_Male"],
@@ -774,7 +737,6 @@ if "Parent" in main_folder_list:
                                             row["Turnover_Female"],
                                             row["Company"],
                                             row["Month"],
-                                            # For INSERT INTO clause
                                             row["Company"],
                                             row["Month"],
                                             row["Total_Male"],
@@ -856,7 +818,6 @@ if "Parent" in main_folder_list:
                                 rows = cursor.fetchall()
                                 existing_rows_set = {tuple(row) for row in rows}
 
-                                # Step 2: Compare with DataFrame
                                 df_tuples = set(zip(df["Company"], df["Month"]))
                                 missing_rows = df_tuples - existing_rows_set
                                 if missing_rows:
@@ -877,7 +838,7 @@ if "Parent" in main_folder_list:
                                             insert_query,
                                             (
                                                 row["Company"],
-                                                row["Month"],  # For UPDATE clause
+                                                row["Month"],
                                                 row["Total_<35"],
                                                 row["Total_35-50"],
                                                 row["Total_51-63"],
@@ -944,10 +905,8 @@ if "Parent" in main_folder_list:
                                     )
                                     for _, row in df.iterrows():
                                         placeholders = (
-                                            # For IF EXISTS condition
                                             row["Company"],
                                             row["Month"],
-                                            # For UPDATE clause
                                             row["Total_<35"],
                                             row["Total_35-50"],
                                             row["Total_51-63"],
@@ -962,7 +921,6 @@ if "Parent" in main_folder_list:
                                             row["Turnover_>63"],
                                             row["Company"],
                                             row["Month"],
-                                            # For INSERT INTO clause
                                             row["Company"],
                                             row["Month"],
                                             row["Total_<35"],
@@ -999,11 +957,10 @@ if "Parent" in main_folder_list:
                     elif sheet_name == "Social - CSR":
                         try:
                             logging.info("Special processing for 'Social - CSR'")
-                            # Drop unnecessary columns
+
                             df = df.drop(columns=["Unnamed:_0", "Unnamed:_5"])
                             df.columns = df.columns.str.strip()
 
-                            # Define required columns and rename
                             column_mapping = {
                                 "Month": "Month",
                                 "CSR__Project_Name": "CSR_ProjectName",
@@ -1012,14 +969,12 @@ if "Parent" in main_folder_list:
                             }
                             df.rename(columns=column_mapping, inplace=True)
 
-                            # Remove the 'Created' column if it exists
                             if "Created" in df.columns:
                                 df.drop(columns=["Created"], inplace=True)
                                 logging.info(f"'Created' column removed.")
 
                             table_name = "[dbo].[Social-CSR]"
 
-                            # Step 1: Check if the sheet has rows that are NOT in the database
                             existing_rows_query = f"""
                                                               SELECT Company, Month
                                                                FROM {table_name}
@@ -1027,25 +982,17 @@ if "Parent" in main_folder_list:
 
                             cursor.execute(existing_rows_query)
                             rows = cursor.fetchall()
-                            existing_rows_set = {
-                                tuple(row) for row in rows
-                            }  # Convert rows to tuples for hashing
+                            existing_rows_set = {tuple(row) for row in rows}
 
-                            # Step 2: Compare with DataFrame
-                            df_tuples = set(
-                                zip(df["Company"], df["Month"])
-                            )  # Convert df to a set of tuples
+                            df_tuples = set(zip(df["Company"], df["Month"]))
 
-                            missing_rows = (
-                                df_tuples - existing_rows_set
-                            )  # Find missing rows
+                            missing_rows = df_tuples - existing_rows_set
 
                             if missing_rows:
                                 logging.info(
                                     "Missing rows detected. Performing TRUNCATE + INSERT."
                                 )
 
-                                # Step 3: Truncate the table before inserting new data
                                 truncate_query = f"TRUNCATE TABLE {table_name};"
                                 cursor.execute(truncate_query)
 
@@ -1104,7 +1051,6 @@ if "Parent" in main_folder_list:
                                         ),
                                     )
 
-                            # Commit the transaction
                             conn.commit()
                             logging.info(
                                 f"Data from sheet '{sheet_name}' inserted into table '{table_name}' successfully."
@@ -1129,7 +1075,7 @@ if "Parent" in main_folder_list:
                                 "Special processing for 'Gov - Management Diversity'"
                             )
                             df = df.drop(columns=["Unnamed:_0"])
-                            # Clean the column names to remove leading/trailing spaces
+
                             df.columns = df.columns.str.strip()
                             required_columns = [
                                 "Month",
@@ -1148,7 +1094,6 @@ if "Parent" in main_folder_list:
                                 }
                                 df.rename(columns=column_mapping, inplace=True)
 
-                                # Remove the 'Created' column if it exists
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
                                     logging.info(f"'Created' column removed.")
@@ -1165,7 +1110,6 @@ if "Parent" in main_folder_list:
                                 rows = cursor.fetchall()
                                 existing_rows_set = {tuple(row) for row in rows}
 
-                                # Step 2: Compare with DataFrame
                                 df_tuples = set(zip(df["Company"], df["Month"]))
                                 missing_rows = df_tuples - existing_rows_set
                                 if missing_rows:
@@ -1173,7 +1117,6 @@ if "Parent" in main_folder_list:
                                         "Missing rows detected. Performing TRUNCATE + INSERT."
                                     )
 
-                                    # Step 3: Truncate the table before inserting new data
                                     truncate_query = f"TRUNCATE TABLE {table_name};"
                                     cursor.execute(truncate_query)
                                     insert_query = f"""
@@ -1239,17 +1182,14 @@ if "Parent" in main_folder_list:
                                 )
                                 for _, row in df.iterrows():
                                     placeholders = (
-                                        # For IF EXISTS condition
                                         row["Company"],
                                         row["Month"],
-                                        # For UPDATE clause
                                         row["Senior_Male"],
                                         row["Senior_Female"],
                                         row["Middle_Male"],
                                         row["Middle_Female"],
                                         row["Company"],
                                         row["Month"],
-                                        # For INSERT INTO clause
                                         row["Company"],
                                         row["Month"],
                                         row["Senior_Male"],
@@ -1278,7 +1218,7 @@ if "Parent" in main_folder_list:
                         try:
                             logging.info("Special processing for 'Gov - Board'")
                             df = df.drop(columns=["Unnamed:_0"])
-                            # Clean the column names to remove leading/trailing spaces
+
                             df.columns = df.columns.str.strip()
                             required_columns = [
                                 "Year",
@@ -1309,7 +1249,6 @@ if "Parent" in main_folder_list:
                                 }
                                 df.rename(columns=column_mapping, inplace=True)
 
-                                # Remove the 'Created' column if it exists
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
                                     logging.info(f"'Created' column removed.")
@@ -1346,10 +1285,7 @@ if "Parent" in main_folder_list:
 
                                 cursor.execute(existing_rows_query)
                                 rows = cursor.fetchall()
-                                existing_rows_set = {
-                                    tuple(row) for row in rows
-                                }  # Convert rows to tuples for hashing
-                                # Step 2: Compare with DataFrame
+                                existing_rows_set = {tuple(row) for row in rows}
                                 df_tuples = set(
                                     zip(df["Name"], df["Company"], df["Year"])
                                 )
@@ -1360,7 +1296,6 @@ if "Parent" in main_folder_list:
                                         "Missing rows detected. Performing TRUNCATE + INSERT."
                                     )
 
-                                    # Step 3: Truncate the table before inserting new data
                                     truncate_query = f"TRUNCATE TABLE {table_name};"
                                     cursor.execute(truncate_query)
                                     insert_query = f"""
@@ -1448,17 +1383,13 @@ if "Parent" in main_folder_list:
                                         "Beginning insertion into Gov-Board table."
                                     )
 
-                                    # Log the DataFrame columns
-                                    # print(f"Columns in DataFrame: {df.columns}")
                                     for _, row in df.iterrows():
                                         cursor.execute(
                                             update_insert_query,
                                             (
-                                                # For IF EXISTS condition
                                                 row["Name"],
                                                 row["Company"],
                                                 row["Year"],
-                                                # For UPDATE clause
                                                 row["Gender"],
                                                 row["Types"],
                                                 row["Executive/Non-Executive"],
@@ -1471,7 +1402,6 @@ if "Parent" in main_folder_list:
                                                 row["Name"],
                                                 row["Company"],
                                                 row["Year"],
-                                                # For INSERT INTO clause
                                                 row["Name"],
                                                 row["Year"],
                                                 row["Gender"],
@@ -1507,11 +1437,10 @@ if "Parent" in main_folder_list:
                     elif sheet_name == "Targets":
                         try:
                             logging.info("Special processing for 'Targets'")
-                            # table_name = '[dbo].[Targets]'
-                            # logging.info("Gov - Board", df.columns)
+
                             df = df.drop(columns=["Unnamed:_0"])
                             print("DF", df.columns)
-                            # Clean the column names to remove leading/trailing spaces
+
                             df.columns = df.columns.str.strip()
                             required_columns = [
                                 "FY",
@@ -1524,12 +1453,7 @@ if "Parent" in main_folder_list:
                                 "IPRen_Water_Consumption_Target_(L)",
                             ]
                             for col in required_columns:
-                                # if col not in df.columns:
-                                #     logging.error(
-                                #         f"Missing required column '{col}' in GOV-BOARD")
-                                #     continue
 
-                                # Rename columns to match the database schema if necessary
                                 column_mapping = {
                                     "FY": "FY",
                                     "Scope_1_Threshold_(tCO2e)": "Scope1_Threshold_tCO2",
@@ -1542,7 +1466,6 @@ if "Parent" in main_folder_list:
                                 }
                                 df.rename(columns=column_mapping, inplace=True)
 
-                                # Remove the 'Created' column if it exists
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
                                     logging.info(f"'Created' column removed.")
@@ -1556,24 +1479,14 @@ if "Parent" in main_folder_list:
 
                                 cursor.execute(existing_rows_query)
                                 rows = cursor.fetchall()
-                                existing_rows_set = {
-                                    tuple(row) for row in rows
-                                }  # Convert rows to tuples for hashing
-                                # Step 2: Compare with DataFrame
-                                df_tuples = set(
-                                    zip(df["FY"], df["Company"])
-                                )  # Convert df to a set of tuples
-
-                                missing_rows = (
-                                    existing_rows_set - df_tuples
-                                )  # Find missing rows
-
+                                existing_rows_set = {tuple(row) for row in rows}
+                                df_tuples = set(zip(df["FY"], df["Company"]))
+                                missing_rows = existing_rows_set - df_tuples
                                 if missing_rows:
                                     logging.info(
                                         "Missing rows detected. Performing TRUNCATE + INSERT."
                                     )
 
-                                    # Step 3: Truncate the table before inserting new data
                                     truncate_query = f"TRUNCATE TABLE {table_name};"
                                     cursor.execute(truncate_query)
                                     logging.info(f"Table name set to: {table_name}")
@@ -1651,17 +1564,14 @@ if "Parent" in main_folder_list:
                                     logging.info(
                                         f"Beginning insertion into {table_name}."
                                     )
-                                    # Log the DataFrame columns
-                                    # print(f"Columns in DataFrame: {df.columns}")
+
                                     for _, row in df.iterrows():
-                                        # Define the placeholders for this row
+
                                         cursor.execute(
                                             update_insert_query,
                                             (
-                                                # For IF EXISTS condition
                                                 row["FY"],
                                                 row["Company"],
-                                                # For UPDATE clause
                                                 row["Scope1_Threshold_tCO2"],
                                                 row["Projected_Scope1t_CO2"],
                                                 row["TurnoverTarget"],
@@ -1671,7 +1581,6 @@ if "Parent" in main_folder_list:
                                                 row["IPRen_WaterConsumptionTarget(L)"],
                                                 row["FY"],
                                                 row["Company"],
-                                                # For INSERT INTO clause
                                                 row["FY"],
                                                 row["Company"],
                                                 row["Scope1_Threshold_tCO2"],

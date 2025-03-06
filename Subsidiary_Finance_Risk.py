@@ -1394,7 +1394,7 @@ if "Subsidiary" in main_folder_list:
                                             (
                                                 row["Account"],
                                                 row["Year"],
-                                                row["Company"],  # For INSERT
+                                                row["Company"],  
                                                 row["January"],
                                                 row["February"],
                                                 row["March"],
