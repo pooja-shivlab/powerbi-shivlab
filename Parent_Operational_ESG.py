@@ -185,7 +185,7 @@ if "Parent" in main_folder_list:
 
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
-                                    logging.info(f"'Created' column removed.")
+                                    logging.info("'Created' column removed.")
 
                                 table_name = "[dbo].[OperationOverview]"
                                 df["Subsidiary_Name"] = df["Subsidiary_Name"].apply(
@@ -376,7 +376,7 @@ if "Parent" in main_folder_list:
 
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
-                                    logging.info(f"'Created' column removed.")
+                                    logging.info("'Created' column removed.")
 
                                 table_name = "[dbo].[Env-Scope1&2Emissions]"
                                 existing_rows_query = f"""
@@ -499,7 +499,7 @@ if "Parent" in main_folder_list:
 
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
-                                    logging.info(f"'Created' column removed.")
+                                    logging.info("'Created' column removed.")
 
                                 table_name = "[dbo].[Env-Utilities]"
                                 logging.info(f"Table name set to: {table_name}")
@@ -634,7 +634,7 @@ if "Parent" in main_folder_list:
 
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
-                                    logging.info(f"'Created' column removed.")
+                                    logging.info("'Created' column removed.")
 
                                 table_name = "[dbo].[Social-EmployeeByGender]"
                                 logging.info(f"Table name set to: {table_name}")
@@ -806,7 +806,7 @@ if "Parent" in main_folder_list:
                                 df.rename(columns=column_mapping, inplace=True)
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
-                                    logging.info(f"'Created' column removed.")
+                                    logging.info("'Created' column removed.")
 
                                 table_name = "[dbo].[Social-EmployeeByAge]"
                                 logging.info(f"Table name set to: {table_name}")
@@ -971,7 +971,7 @@ if "Parent" in main_folder_list:
 
                             if "Created" in df.columns:
                                 df.drop(columns=["Created"], inplace=True)
-                                logging.info(f"'Created' column removed.")
+                                logging.info("'Created' column removed.")
 
                             table_name = "[dbo].[Social-CSR]"
 
@@ -1096,7 +1096,7 @@ if "Parent" in main_folder_list:
 
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
-                                    logging.info(f"'Created' column removed.")
+                                    logging.info("'Created' column removed.")
 
                                 table_name = "[dbo].[Gov-ManagementDiversity]"
                                 logging.info(f"Table name set to: {table_name}")
@@ -1251,7 +1251,7 @@ if "Parent" in main_folder_list:
 
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
-                                    logging.info(f"'Created' column removed.")
+                                    logging.info("'Created' column removed.")
                                 if "FY" in df.columns:
                                     try:
                                         df["Year"] = df["Year"].astype(int)
@@ -1468,7 +1468,7 @@ if "Parent" in main_folder_list:
 
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
-                                    logging.info(f"'Created' column removed.")
+                                    logging.info("'Created' column removed.")
 
                                 table_name = "[dbo].[Targets]"
                                 logging.info(f"Table name set to: {table_name}")
