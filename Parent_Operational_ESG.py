@@ -1,7 +1,7 @@
 from Common_powerBI import *
 
 if "Parent" in main_folder_list:
-    logging.info("Processing 'Parent' folder.")
+    logging.info("Processing Parent Operational ESG folder.")
 
     xlsx_files = process_subfolders(
         ctx, parent_path="/sites/Dashboard-UAT/Shared%20Documents/Parent"
@@ -43,7 +43,6 @@ if "Parent" in main_folder_list:
                     sheet_names.remove("Preface")
 
                 for sheet_name in sheet_names:
-                    logging.info(f"Processing sheet: {sheet_name}")
 
                     if sheet_name in [
                         "Financial Performance",
@@ -95,7 +94,6 @@ if "Parent" in main_folder_list:
                         "Subsidiary RKAP Cash Flow",
                         "Debt Management",
                     ]:
-                        logging.info(f"Skipping sheet: {sheet_name}")
                         continue
                     else:
                         print("Skipped 4 lines")
@@ -156,9 +154,6 @@ if "Parent" in main_folder_list:
                             f"Processing sheet: {sheet_name} from Dashboard: {dashboard}"
                         )
                         try:
-                            logging.info(
-                                "Special processing for 'Operation Overview' sheet."
-                            )
                             name_table = "dbo.OperationOverview"
                             required_columns = [
                                 "Subsidiary_Name",
@@ -185,7 +180,6 @@ if "Parent" in main_folder_list:
 
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
-                                    logging.info(f"'Created' column removed.")
 
                                 table_name = "[dbo].[OperationOverview]"
                                 df["Subsidiary_Name"] = df["Subsidiary_Name"].apply(
@@ -261,9 +255,6 @@ if "Parent" in main_folder_list:
                                 missing_rows = df_tuples - existing_rows_set
 
                                 if missing_rows:
-                                    logging.info(
-                                        "Missing rows detected. Performing TRUNCATE + INSERT."
-                                    )
 
                                     truncate_query = f"TRUNCATE TABLE {table_name};"
                                     cursor.execute(truncate_query)
@@ -334,9 +325,7 @@ if "Parent" in main_folder_list:
                                             ),
                                         )
                                 conn.commit()
-                            logging.info(
-                                "Data successfully processed and committed for 'Operation Overview' sheet."
-                            )
+
                             sheet_status[(inferred_dashboard, sheet_name)] = {
                                 "Status": "Success",
                                 "Description": "Sheet processed successfully",
@@ -376,7 +365,6 @@ if "Parent" in main_folder_list:
 
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
-                                    logging.info(f"'Created' column removed.")
 
                                 table_name = "[dbo].[Env-Scope1&2Emissions]"
                                 existing_rows_query = f"""
@@ -391,9 +379,6 @@ if "Parent" in main_folder_list:
 
                                 missing_rows = df_tuples - existing_rows_set
                                 if missing_rows:
-                                    logging.info(
-                                        "Missing rows detected. Performing TRUNCATE + INSERT."
-                                    )
 
                                     truncate_query = f"TRUNCATE TABLE {table_name};"
                                     cursor.execute(truncate_query)
@@ -416,7 +401,7 @@ if "Parent" in main_folder_list:
                                             ),
                                         )
                                 else:
-                                    logging.info(f"Table name set to: {table_name}")
+
                                     update_insert_query = f"""
                                                        IF EXISTS (
                                                            SELECT 1
@@ -437,9 +422,7 @@ if "Parent" in main_folder_list:
                                                        END
                                                    """
 
-                                    logging.info(
-                                        "Beginning insertion into Env-Scope1&2Emissions table."
-                                    )
+
                                     for _, row in df.iterrows():
 
                                         cursor.execute(
@@ -460,9 +443,7 @@ if "Parent" in main_folder_list:
                                             ),
                                         )
                                 conn.commit()
-                                logging.info(
-                                    f"Data from sheet '{sheet_name}' inserted into table '{table_name}' successfully."
-                                )
+
                                 sheet_status[(inferred_dashboard, sheet_name)] = {
                                     "Status": "Success",
                                     "Description": "Sheet processed successfully",
@@ -499,10 +480,8 @@ if "Parent" in main_folder_list:
 
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
-                                    logging.info(f"'Created' column removed.")
 
                                 table_name = "[dbo].[Env-Utilities]"
-                                logging.info(f"Table name set to: {table_name}")
                                 existing_rows_query = f"""
                                                          SELECT Company, Month
                                                           FROM {table_name}
@@ -515,9 +494,7 @@ if "Parent" in main_folder_list:
                                 df_tuples = set(zip(df["Company"], df["Month"]))
                                 missing_rows = df_tuples - existing_rows_set
                                 if missing_rows:
-                                    logging.info(
-                                        "Missing rows detected. Performing TRUNCATE + INSERT."
-                                    )
+
                                     truncate_query = f"TRUNCATE TABLE {table_name};"
                                     cursor.execute(truncate_query)
                                     insert_query = f"""
@@ -567,10 +544,6 @@ if "Parent" in main_folder_list:
                                         END
                                     """
 
-                                    logging.info(
-                                        "Beginning insertion into ENV-Utilites table."
-                                    )
-
                                     for _, row in df.iterrows():
                                         placeholders = (
                                             row["Company"],
@@ -588,9 +561,7 @@ if "Parent" in main_folder_list:
                                         )
 
                                 conn.commit()
-                            logging.info(
-                                f"Data from sheet '{sheet_name}' inserted into table '{table_name}' successfully."
-                            )
+
                             sheet_status[(inferred_dashboard, sheet_name)] = {
                                 "Status": "Success",
                                 "Description": "Sheet processed successfully",
@@ -634,10 +605,9 @@ if "Parent" in main_folder_list:
 
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
-                                    logging.info(f"'Created' column removed.")
+
 
                                 table_name = "[dbo].[Social-EmployeeByGender]"
-                                logging.info(f"Table name set to: {table_name}")
 
                                 existing_rows_query = f"""
                                                              SELECT Company, Month
@@ -652,9 +622,7 @@ if "Parent" in main_folder_list:
 
                                 missing_rows = df_tuples - existing_rows_set
                                 if missing_rows:
-                                    logging.info(
-                                        "Missing rows detected. Performing TRUNCATE + INSERT."
-                                    )
+
 
                                     truncate_query = f"TRUNCATE TABLE {table_name};"
                                     cursor.execute(truncate_query)
@@ -721,9 +689,7 @@ if "Parent" in main_folder_list:
                                                 END
                                             """
 
-                                    logging.info(
-                                        "Beginning insertion into Social-EmployeeByGender table."
-                                    )
+
                                     for _, row in df.iterrows():
 
                                         placeholders = (
@@ -747,9 +713,7 @@ if "Parent" in main_folder_list:
                                             row["Turnover_Female"],
                                         )
                                 conn.commit()
-                                logging.info(
-                                    f"Data from sheet '{sheet_name}' inserted into table '{table_name}' successfully."
-                                )
+
                                 sheet_status[(inferred_dashboard, sheet_name)] = {
                                     "Status": "Success",
                                     "Description": "Sheet processed successfully",
@@ -806,10 +770,9 @@ if "Parent" in main_folder_list:
                                 df.rename(columns=column_mapping, inplace=True)
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
-                                    logging.info(f"'Created' column removed.")
 
                                 table_name = "[dbo].[Social-EmployeeByAge]"
-                                logging.info(f"Table name set to: {table_name}")
+
                                 existing_rows_query = f"""
                                                             SELECT Company, Month FROM {table_name}
                                                         """
@@ -821,9 +784,7 @@ if "Parent" in main_folder_list:
                                 df_tuples = set(zip(df["Company"], df["Month"]))
                                 missing_rows = df_tuples - existing_rows_set
                                 if missing_rows:
-                                    logging.info(
-                                        "Missing rows detected. Performing TRUNCATE + INSERT."
-                                    )
+
                                     truncate_query = f"TRUNCATE TABLE {table_name};"
                                     cursor.execute(truncate_query)
                                     insert_query = f"""
@@ -855,7 +816,7 @@ if "Parent" in main_folder_list:
                                         )
 
                                 else:
-                                    logging.info(f"Table name set to: {table_name}")
+
                                     update_insert_query = f"""
                                                                         IF EXISTS (
                                                                             SELECT 1
@@ -900,9 +861,7 @@ if "Parent" in main_folder_list:
                                                                         END
                                                                     """
 
-                                    logging.info(
-                                        "Beginning insertion into Social-EmployeeByAge table."
-                                    )
+
                                     for _, row in df.iterrows():
                                         placeholders = (
                                             row["Company"],
@@ -937,9 +896,7 @@ if "Parent" in main_folder_list:
                                             row["Turnover_>63"],
                                         )
                                 conn.commit()
-                            logging.info(
-                                f"Data from sheet '{sheet_name}' inserted into table '{table_name}' successfully."
-                            )
+
                             sheet_status[(inferred_dashboard, sheet_name)] = {
                                 "Status": "Success",
                                 "Description": "Sheet processed successfully",
@@ -971,7 +928,6 @@ if "Parent" in main_folder_list:
 
                             if "Created" in df.columns:
                                 df.drop(columns=["Created"], inplace=True)
-                                logging.info(f"'Created' column removed.")
 
                             table_name = "[dbo].[Social-CSR]"
 
@@ -989,9 +945,7 @@ if "Parent" in main_folder_list:
                             missing_rows = df_tuples - existing_rows_set
 
                             if missing_rows:
-                                logging.info(
-                                    "Missing rows detected. Performing TRUNCATE + INSERT."
-                                )
+
 
                                 truncate_query = f"TRUNCATE TABLE {table_name};"
                                 cursor.execute(truncate_query)
@@ -1052,9 +1006,7 @@ if "Parent" in main_folder_list:
                                     )
 
                             conn.commit()
-                            logging.info(
-                                f"Data from sheet '{sheet_name}' inserted into table '{table_name}' successfully."
-                            )
+
                             sheet_status[(inferred_dashboard, sheet_name)] = {
                                 "Status": "Success",
                                 "Description": "Sheet processed successfully",
@@ -1096,10 +1048,8 @@ if "Parent" in main_folder_list:
 
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
-                                    logging.info(f"'Created' column removed.")
 
                                 table_name = "[dbo].[Gov-ManagementDiversity]"
-                                logging.info(f"Table name set to: {table_name}")
 
                                 existing_rows_query = f"""
                                                      SELECT Company, Month
@@ -1113,9 +1063,7 @@ if "Parent" in main_folder_list:
                                 df_tuples = set(zip(df["Company"], df["Month"]))
                                 missing_rows = df_tuples - existing_rows_set
                                 if missing_rows:
-                                    logging.info(
-                                        "Missing rows detected. Performing TRUNCATE + INSERT."
-                                    )
+
 
                                     truncate_query = f"TRUNCATE TABLE {table_name};"
                                     cursor.execute(truncate_query)
@@ -1177,9 +1125,7 @@ if "Parent" in main_folder_list:
                                                                     END
                                                                                                                  """
 
-                                logging.info(
-                                    "Beginning insertion into Gov-ManagementDiversity table."
-                                )
+
                                 for _, row in df.iterrows():
                                     placeholders = (
                                         row["Company"],
@@ -1198,9 +1144,7 @@ if "Parent" in main_folder_list:
                                         row["Middle_Female"],
                                     )
                             conn.commit()
-                            logging.info(
-                                f"Data from sheet '{sheet_name}' inserted into table '{table_name}' successfully."
-                            )
+
                             sheet_status[(inferred_dashboard, sheet_name)] = {
                                 "Status": "Success",
                                 "Description": "Sheet processed successfully",
@@ -1251,13 +1195,11 @@ if "Parent" in main_folder_list:
 
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
-                                    logging.info(f"'Created' column removed.")
+
                                 if "FY" in df.columns:
                                     try:
                                         df["Year"] = df["Year"].astype(int)
-                                        logging.info(
-                                            "Converted 'Year' column to integers."
-                                        )
+
                                     except ValueError as ve:
                                         logging.error(
                                             f"Failed to convert 'FY' column to integers: {ve}"
@@ -1272,12 +1214,10 @@ if "Parent" in main_folder_list:
                                 df["EndDate"] = pd.to_datetime(
                                     df["EndDate"], errors="coerce"
                                 )
-                                logging.info(
-                                    f"main_folder: {main_folder}, sheet_name: {sheet_name}"
-                                )
+
 
                                 table_name = "[dbo].[Gov-Board]"
-                                logging.info(f"Table name set to: {table_name}")
+
                                 existing_rows_query = f"""
                                                          SELECT Name, Company, Year
                                                           FROM {table_name}
@@ -1290,11 +1230,9 @@ if "Parent" in main_folder_list:
                                     zip(df["Name"], df["Company"], df["Year"])
                                 )
                                 missing_rows = existing_rows_set - df_tuples
-                                logging.info(f"Table name set to: {table_name}")
+
                                 if missing_rows:
-                                    logging.info(
-                                        "Missing rows detected. Performing TRUNCATE + INSERT."
-                                    )
+
 
                                     truncate_query = f"TRUNCATE TABLE {table_name};"
                                     cursor.execute(truncate_query)
@@ -1379,9 +1317,7 @@ if "Parent" in main_folder_list:
                                                    END
                                                                         """
 
-                                    logging.info(
-                                        "Beginning insertion into Gov-Board table."
-                                    )
+
 
                                     for _, row in df.iterrows():
                                         cursor.execute(
@@ -1418,9 +1354,7 @@ if "Parent" in main_folder_list:
                                         )
 
                             conn.commit()
-                            logging.info(
-                                f"Data from sheet '{sheet_name}' inserted into table '{table_name}' successfully."
-                            )
+
                             sheet_status[(inferred_dashboard, sheet_name)] = {
                                 "Status": "Success",
                                 "Description": "Sheet processed successfully",
@@ -1468,14 +1402,13 @@ if "Parent" in main_folder_list:
 
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
-                                    logging.info(f"'Created' column removed.")
 
                                 table_name = "[dbo].[Targets]"
-                                logging.info(f"Table name set to: {table_name}")
+
                                 existing_rows_query = f"""
-                                                                                             SELECT FY, Company
-                                                                                              FROM {table_name}
-                                                                                            """
+                                                     SELECT FY, Company
+                                                      FROM {table_name}
+                                                    """
 
                                 cursor.execute(existing_rows_query)
                                 rows = cursor.fetchall()
@@ -1483,13 +1416,10 @@ if "Parent" in main_folder_list:
                                 df_tuples = set(zip(df["FY"], df["Company"]))
                                 missing_rows = existing_rows_set - df_tuples
                                 if missing_rows:
-                                    logging.info(
-                                        "Missing rows detected. Performing TRUNCATE + INSERT."
-                                    )
 
                                     truncate_query = f"TRUNCATE TABLE {table_name};"
                                     cursor.execute(truncate_query)
-                                    logging.info(f"Table name set to: {table_name}")
+
                                     insert_query = f"""
                                                         INSERT INTO {table_name} (
                                                                        [FY],
@@ -1561,9 +1491,7 @@ if "Parent" in main_folder_list:
                                                    END
                                                                                                 """
 
-                                    logging.info(
-                                        f"Beginning insertion into {table_name}."
-                                    )
+
 
                                     for _, row in df.iterrows():
 
@@ -1593,9 +1521,7 @@ if "Parent" in main_folder_list:
                                             ),
                                         )
                             conn.commit()
-                            logging.info(
-                                f"Data from sheet '{sheet_name}' inserted into table '{table_name}' successfully."
-                            )
+
                             sheet_status[(inferred_dashboard, sheet_name)] = {
                                 "Status": "Success",
                                 "Description": "Sheet processed successfully",

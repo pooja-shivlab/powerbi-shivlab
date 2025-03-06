@@ -208,9 +208,7 @@ if "Parent" in main_folder_list:
                                     existing_records_query,
                                     (current_year, current_quarter),
                                 )
-                                existing_records = set(
-                                    tuple(row) for row in cursor.fetchall()
-                                )
+                                existing_records = {tuple(row) for row in cursor.fetchall()}
                                 all_current_records = set()
                                 for _, row in df.iterrows():
                                     all_current_records.add(
@@ -518,9 +516,7 @@ if "Parent" in main_folder_list:
                                     existing_records_query,
                                     (current_year, current_quarter),
                                 )
-                                existing_records = set(
-                                    tuple(row) for row in cursor.fetchall()
-                                )
+                                existing_records = {tuple(row) for row in cursor.fetchall()}
                                 all_current_records = set()
                                 for _, row in df.iterrows():
                                     all_current_records.add(
@@ -753,9 +749,7 @@ if "Parent" in main_folder_list:
                                     existing_records_query,
                                     (current_year, current_quarter),
                                 )
-                                existing_records = set(
-                                    tuple(row) for row in cursor.fetchall()
-                                )
+                                existing_records = {tuple(row) for row in cursor.fetchall()}
                                 all_current_records = set()
                                 for _, row in df.iterrows():
                                     all_current_records.add(
@@ -951,9 +945,7 @@ if "Parent" in main_folder_list:
                                     existing_records_query,
                                     (current_year, current_quarter),
                                 )
-                                existing_records = set(
-                                    tuple(row) for row in cursor.fetchall()
-                                )
+                                existing_records = {tuple(row) for row in cursor.fetchall()}
                                 all_current_records = set()
                                 for _, row in df.iterrows():
                                     all_current_records.add(

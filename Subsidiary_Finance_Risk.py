@@ -417,9 +417,7 @@ if "Subsidiary" in main_folder_list:
                                     cursor.execute(
                                         existing_records_query, (company, year, quarter)
                                     )
-                                    existing_records = set(
-                                        tuple(row) for row in cursor.fetchall()
-                                    )
+                                    existing_records = {tuple(row) for row in cursor.fetchall()}
                                     company_df = df[
                                         (df["Company"] == company)
                                         & (df["Year"] == year)
@@ -730,9 +728,7 @@ if "Subsidiary" in main_folder_list:
                                     cursor.execute(
                                         existing_records_query, (company, year, quarter)
                                     )
-                                    existing_records = set(
-                                        tuple(row) for row in cursor.fetchall()
-                                    )
+                                    existing_records = {tuple(row) for row in cursor.fetchall()}
                                     company_df = df[
                                         (df["Company"] == company)
                                         & (df["Year"] == year)
@@ -966,9 +962,7 @@ if "Subsidiary" in main_folder_list:
                                     cursor.execute(
                                         existing_records_query, (company, year, quarter)
                                     )
-                                    existing_records = set(
-                                        tuple(row) for row in cursor.fetchall()
-                                    )
+                                    existing_records = {tuple(row) for row in cursor.fetchall()}
                                     company_df = df[
                                         (df["Company"] == company)
                                         & (df["Year"] == year)
@@ -1175,9 +1169,7 @@ if "Subsidiary" in main_folder_list:
                                     cursor.execute(
                                         existing_records_query, (company, year, quarter)
                                     )
-                                    existing_records = set(
-                                        tuple(row) for row in cursor.fetchall()
-                                    )
+                                    existing_records = {tuple(row) for row in cursor.fetchall()}
                                     company_df = df[
                                         (df["Company"] == company)
                                         & (df["Year"] == year)

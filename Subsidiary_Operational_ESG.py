@@ -42,7 +42,6 @@ if "Subsidiary" in main_folder_list:
                     sheet_names.remove("Preface")
 
                 for sheet_name in sheet_names:
-                    logging.info(f"Processing sheet: {sheet_name}")
 
                     if sheet_name in [
                         "Financial Performance",
@@ -95,7 +94,7 @@ if "Subsidiary" in main_folder_list:
                         "Debt Management",
                     ]:
 
-                        logging.info(f"Skipping sheet: {sheet_name}")
+
                         continue
                     else:
                         skiprows = 4
@@ -161,7 +160,7 @@ if "Subsidiary" in main_folder_list:
                                 df.rename(columns=column_mapping, inplace=True)
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
-                                    logging.info(f"'Created' column removed.")
+
                                 table_name = "dbo.OP_FinancialPerformance"
                                 existing_rows_query = f"""
                                                     SELECT Date, Remarks ,Company
@@ -177,9 +176,7 @@ if "Subsidiary" in main_folder_list:
 
                                 missing_rows = df_tuples - existing_rows_set
                                 if missing_rows:
-                                    logging.info(
-                                        "Missing rows detected. Performing TRUNCATE + INSERT."
-                                    )
+
 
                                     truncate_query = (
                                         f"DELETE FROM {table_name} WHERE Company = ?;"
@@ -233,9 +230,7 @@ if "Subsidiary" in main_folder_list:
                                             END
                                         """
 
-                                    logging.info(
-                                        "Beginning insertion into OP_FinancialPerformance table."
-                                    )
+
 
                                     for _, row in df.iterrows():
                                         placeholders = (
@@ -255,9 +250,7 @@ if "Subsidiary" in main_folder_list:
                                         )
 
                             conn.commit()
-                            logging.info(
-                                "Data successfully processed and committed for 'FinancialPerformance' sheet."
-                            )
+
                             sheet_status[(inferred_dashboard, sheet_name)] = {
                                 "Status": "Success",
                                 "Description": "Sheet processed successfully",
@@ -304,7 +297,6 @@ if "Subsidiary" in main_folder_list:
 
                             if "Created" in df.columns:
                                 df.drop(columns=["Created"], inplace=True)
-                                logging.info("'Created' column removed.")
 
                             table_name = "[dbo].[OP_ProjectTimeline]"
                             existing_rows_query = f"""
@@ -321,9 +313,7 @@ if "Subsidiary" in main_folder_list:
 
                             missing_rows = df_tuples - existing_rows_set
                             if missing_rows:
-                                logging.info(
-                                    "Missing rows detected. Performing TRUNCATE + INSERT."
-                                )
+
 
                                 truncate_query = (
                                     f"DELETE FROM {table_name} WHERE Company = ?;"
@@ -378,9 +368,7 @@ if "Subsidiary" in main_folder_list:
                                         VALUES (?, ?, ?, ?, ?, ?, ?);
                                     END
                                 """
-                                logging.info(
-                                    "Beginning insertion into 'Project Timeline' table."
-                                )
+
 
                                 for _, row in df.iterrows():
                                     cursor.execute(
@@ -406,9 +394,7 @@ if "Subsidiary" in main_folder_list:
                                         ),
                                     )
                             conn.commit()
-                            logging.info(
-                                "Data successfully processed and committed for 'Project Timeline' sheet."
-                            )
+
                             sheet_status[(inferred_dashboard, sheet_name)] = {
                                 "Status": "Success",
                                 "Description": "Sheet processed successfully",
@@ -467,7 +453,6 @@ if "Subsidiary" in main_folder_list:
 
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
-                                    logging.info(f"'Created' column removed.")
 
                                 project_list_df = pd.DataFrame(
                                     project_list, columns=["Subsidiary_Name", "Project"]
@@ -480,9 +465,7 @@ if "Subsidiary" in main_folder_list:
                                 if matching_projects:
 
                                     df["Project"] = ", ".join(matching_projects)
-                                    logging.info(
-                                        f"Mapped Projects for Company '{company_name}': {df['Project'].iloc[0]}"
-                                    )
+
 
                                 current_project = df["Project"].iloc[0]
                                 table_name = "dbo.OP_ProjectDetail"
@@ -501,9 +484,7 @@ if "Subsidiary" in main_folder_list:
 
                                 missing_rows = existing_rows_set - all_current_records
                                 if missing_rows:
-                                    logging.info(
-                                        "Missing rows detected. Performing TRUNCATE + INSERT."
-                                    )
+
                                     truncate_query = f"""
                                                     DELETE FROM {table_name} WITH (ROWLOCK, UPDLOCK)
                                                     WHERE [Company] = ? AND [Project] = ?
@@ -511,9 +492,7 @@ if "Subsidiary" in main_folder_list:
                                     missing_rows = list(missing_rows)
                                     cursor.executemany(truncate_query, missing_rows)
                                     conn.commit()
-                                    logging.info(
-                                        "Obsolete records deleted successfully."
-                                    )
+
 
                                     insert_query = f"""
                                                 INSERT INTO {table_name} (
@@ -608,9 +587,6 @@ if "Subsidiary" in main_folder_list:
                                         END
                                     """
 
-                                    logging.info(
-                                        "Beginning insertion into OP_Project Details table."
-                                    )
                                     for _, row in df.iterrows():
                                         cursor.execute(
                                             update_insert_query,
@@ -650,9 +626,7 @@ if "Subsidiary" in main_folder_list:
                                             ),
                                         )
                             conn.commit()
-                            logging.info(
-                                f"Data from sheet '{sheet_name}' inserted into table '{table_name}' successfully."
-                            )
+
                             sheet_status[(inferred_dashboard, sheet_name)] = {
                                 "Status": "Success",
                                 "Description": "Sheet processed successfully",
@@ -708,7 +682,7 @@ if "Subsidiary" in main_folder_list:
 
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
-                                    logging.info(f"'Created' column removed.")
+
 
                                 table_name = "dbo.OP_ProjectExpenses"
                                 existing_rows_query = f"""
@@ -723,9 +697,7 @@ if "Subsidiary" in main_folder_list:
 
                                 missing_rows = df_tuples - existing_rows_set
                                 if missing_rows:
-                                    logging.info(
-                                        "Missing rows detected. Performing TRUNCATE + INSERT."
-                                    )
+
 
                                     truncate_query = (
                                         f"DELETE FROM {table_name} WHERE Company = ?;"
@@ -781,10 +753,6 @@ if "Subsidiary" in main_folder_list:
 
                                         """
 
-                                    logging.info(
-                                        "Beginning insertion into OP_Project Expenses table."
-                                    )
-
                                     for _, row in df.iterrows():
                                         cursor.execute(
                                             update_insert_query,
@@ -806,9 +774,7 @@ if "Subsidiary" in main_folder_list:
                                             ),
                                         )
                             conn.commit()
-                            logging.info(
-                                f"Data from sheet '{sheet_name}' inserted into table '{table_name}' successfully."
-                            )
+
                             sheet_status[(inferred_dashboard, sheet_name)] = {
                                 "Status": "Success",
                                 "Description": "Sheet processed successfully",
@@ -888,7 +854,6 @@ if "Subsidiary" in main_folder_list:
 
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
-                                    logging.info("'Created' column removed.")
 
                                 table_name = "dbo.OP_ConstructionTimeline"
                                 existing_rows_query = f"""
@@ -908,9 +873,6 @@ if "Subsidiary" in main_folder_list:
 
                                 missing_rows = df_tuples - existing_rows_set
                                 if missing_rows:
-                                    logging.info(
-                                        "Missing rows detected. Performing TRUNCATE + INSERT."
-                                    )
 
                                     truncate_query = (
                                         f"DELETE FROM {table_name} WHERE Company = ?;"
@@ -1036,9 +998,7 @@ if "Subsidiary" in main_folder_list:
                                                 f"Error converting row data: {row.to_dict()} -> {e}"
                                             )
                             conn.commit()
-                            logging.info(
-                                "Data successfully processed and committed for 'Construction Timeline' sheet."
-                            )
+
                             sheet_status[(inferred_dashboard, sheet_name)] = {
                                 "Status": "Success",
                                 "Description": "Sheet processed successfully",
@@ -1074,7 +1034,6 @@ if "Subsidiary" in main_folder_list:
 
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
-                                    logging.info(f"'Created' column removed.")
 
                                 df["ContractedElectricityDelivered"] = df[
                                     "ContractedElectricityDelivered"
@@ -1094,9 +1053,6 @@ if "Subsidiary" in main_folder_list:
 
                                 missing_rows = df_tuples - existing_rows_set
                                 if missing_rows:
-                                    logging.info(
-                                        "Missing rows detected. Performing TRUNCATE + INSERT."
-                                    )
 
                                     truncate_query = (
                                         f"DELETE FROM {table_name} WHERE Company = ?;"
@@ -1150,9 +1106,7 @@ if "Subsidiary" in main_folder_list:
 
                                                                """
 
-                                    logging.info(
-                                        "Beginning insertion into OP_Electricity Generation (Annualy table."
-                                    )
+
                                     df = df.sort_values(by=["Company"])
 
                                     for _, row in df.iterrows():
@@ -1172,9 +1126,7 @@ if "Subsidiary" in main_folder_list:
                                             ),
                                         )
                             conn.commit()
-                            logging.info(
-                                f"Data from sheet '{sheet_name}' inserted into table '{table_name}' successfully."
-                            )
+
                             sheet_status[(inferred_dashboard, sheet_name)] = {
                                 "Status": "Success",
                                 "Description": "Sheet processed successfully",
@@ -1220,7 +1172,6 @@ if "Subsidiary" in main_folder_list:
 
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
-                                    logging.info(f"'Created' column removed.")
 
                                 table_name = "dbo.OP_MonthlyElectricityGeneration"
                                 existing_rows_query = f"""
@@ -1235,9 +1186,7 @@ if "Subsidiary" in main_folder_list:
 
                                 missing_rows = df_tuples - existing_rows_set
                                 if missing_rows:
-                                    logging.info(
-                                        "Missing rows detected. Performing TRUNCATE + INSERT."
-                                    )
+
 
                                     truncate_query = (
                                         f"DELETE FROM {table_name} WHERE Company = ?;"
@@ -1313,9 +1262,7 @@ if "Subsidiary" in main_folder_list:
 
                                                                        """
 
-                                    logging.info(
-                                        "Beginning insertion into OP_Electricity Generation (Monthly) table."
-                                    )
+
 
                                     for _, row in df.iterrows():
                                         cursor.execute(
@@ -1343,9 +1290,7 @@ if "Subsidiary" in main_folder_list:
                                             ),
                                         )
                             conn.commit()
-                            logging.info(
-                                f"Data from sheet '{sheet_name}' inserted into table '{table_name}' successfully."
-                            )
+
                             sheet_status[(inferred_dashboard, sheet_name)] = {
                                 "Status": "Success",
                                 "Description": "Sheet processed successfully",
@@ -1385,7 +1330,6 @@ if "Subsidiary" in main_folder_list:
 
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
-                                    logging.info(f"'Created' column removed.")
 
                                 table_name = "OP_DailyElectricityGeneration"
 
@@ -1401,9 +1345,7 @@ if "Subsidiary" in main_folder_list:
 
                                 missing_rows = df_tuples - existing_rows_set
                                 if missing_rows:
-                                    logging.info(
-                                        "Missing rows detected. Performing TRUNCATE + INSERT."
-                                    )
+
 
                                     truncate_query = (
                                         f"DELETE FROM {table_name} WHERE Company = ?;"
@@ -1463,9 +1405,7 @@ if "Subsidiary" in main_folder_list:
                                                                        END
                                                                                                                        """
 
-                                    logging.info(
-                                        "Beginning insertion into OP_Electricity Generation (Daily) table."
-                                    )
+
                                     for _, row in df.iterrows():
                                         cursor.execute(
                                             update_insert_query,
@@ -1485,9 +1425,7 @@ if "Subsidiary" in main_folder_list:
                                             ),
                                         )
                             conn.commit()
-                            logging.info(
-                                f"Data from sheet '{sheet_name}' inserted into table '{table_name}' successfully."
-                            )
+
                             sheet_status[(inferred_dashboard, sheet_name)] = {
                                 "Status": "Success",
                                 "Description": "Sheet processed successfully",
@@ -1524,7 +1462,6 @@ if "Subsidiary" in main_folder_list:
 
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
-                                    logging.info(f"'Created' column removed.")
 
                                 table_name = "dbo.OP_CoalStockpileDaily"
                                 existing_rows_query = f"""
@@ -1539,9 +1476,7 @@ if "Subsidiary" in main_folder_list:
 
                                 missing_rows = df_tuples - existing_rows_set
                                 if missing_rows:
-                                    logging.info(
-                                        "Missing rows detected. Performing TRUNCATE + INSERT."
-                                    )
+
 
                                     truncate_query = (
                                         f"DELETE FROM {table_name} WHERE Company = ?;"
@@ -1600,9 +1535,6 @@ if "Subsidiary" in main_folder_list:
 
                                                                                                                        """
 
-                                    logging.info(
-                                        "Beginning insertion into OP_Electricity Generation (Daily) table."
-                                    )
 
                                     for _, row in df.iterrows():
                                         cursor.execute(
@@ -1622,9 +1554,7 @@ if "Subsidiary" in main_folder_list:
                                         )
 
                             conn.commit()
-                            logging.info(
-                                f"Data from sheet '{sheet_name}' inserted into table '{table_name}' successfully."
-                            )
+
                             sheet_status[(inferred_dashboard, sheet_name)] = {
                                 "Status": "Success",
                                 "Description": "Sheet processed successfully",
@@ -1679,7 +1609,6 @@ if "Subsidiary" in main_folder_list:
 
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
-                                    logging.info(f"'Created' column removed.")
 
                                 table_name = "dbo.OP_MonthlyOutagesAndAvailability"
                                 existing_rows_query = f"""
@@ -1693,9 +1622,7 @@ if "Subsidiary" in main_folder_list:
                                 df_tuples = set(zip(df["Company"], df["Month"]))
                                 missing_rows = df_tuples - existing_rows_set
                                 if missing_rows:
-                                    logging.info(
-                                        "Missing rows detected. Performing TRUNCATE + INSERT."
-                                    )
+
                                     truncate_query = (
                                         f"DELETE FROM {table_name} WHERE Company = ?;"
                                     )
@@ -1796,9 +1723,7 @@ if "Subsidiary" in main_folder_list:
 
                                                                                                                        """
 
-                                    logging.info(
-                                        "Beginning insertion into Outages & Availability table."
-                                    )
+
 
                                     for _, row in df.iterrows():
                                         cursor.execute(
@@ -1835,9 +1760,7 @@ if "Subsidiary" in main_folder_list:
                                             ),
                                         )
                             conn.commit()
-                            logging.info(
-                                f"Data from sheet '{sheet_name}' inserted into table '{table_name}' successfully."
-                            )
+
                             sheet_status[(inferred_dashboard, sheet_name)] = {
                                 "Status": "Success",
                                 "Description": "Sheet processed successfully",
@@ -1877,7 +1800,6 @@ if "Subsidiary" in main_folder_list:
 
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
-                                    logging.info(f"'Created' column removed.")
 
                                 table_name = "[dbo].[SubsidiaryEnv-Scope1&2Emissions]"
                                 existing_rows_query = f"""
@@ -1892,9 +1814,7 @@ if "Subsidiary" in main_folder_list:
 
                                 missing_rows = df_tuples - existing_rows_set
                                 if missing_rows:
-                                    logging.info(
-                                        "Missing rows detected. Performing TRUNCATE + INSERT."
-                                    )
+
 
                                     truncate_query = (
                                         f"DELETE FROM {table_name} WHERE Company = ?;"
@@ -1919,7 +1839,6 @@ if "Subsidiary" in main_folder_list:
                                             ),
                                         )
                                 else:
-                                    logging.info(f"Table name set to: {table_name}")
                                     update_insert_query = f"""
                                                                            IF EXISTS (
                                                                                SELECT 1
@@ -1940,9 +1859,7 @@ if "Subsidiary" in main_folder_list:
                                                                            END
                                                                        """
 
-                                    logging.info(
-                                        "Beginning insertion into Env-Scope1&2Emissions table."
-                                    )
+
 
                                     for _, row in df.iterrows():
 
@@ -1964,9 +1881,7 @@ if "Subsidiary" in main_folder_list:
                                             ),
                                         )
                                 conn.commit()
-                                logging.info(
-                                    f"Data from sheet '{sheet_name}' inserted into table '{table_name}' successfully."
-                                )
+
                                 sheet_status[(inferred_dashboard, sheet_name)] = {
                                     "Status": "Success",
                                     "Description": "Sheet processed successfully",
@@ -2005,7 +1920,6 @@ if "Subsidiary" in main_folder_list:
                                     df.drop(columns=["Created"], inplace=True)
 
                                 table_name = "[dbo].[SubsidiaryEnv-Utilities]"
-                                logging.info(f"Table name set to: {table_name}")
                                 existing_rows_query = f"""
                                                                     SELECT Company, Month
                                                                      FROM {table_name}
@@ -2019,9 +1933,7 @@ if "Subsidiary" in main_folder_list:
 
                                 missing_rows = df_tuples - existing_rows_set
                                 if missing_rows:
-                                    logging.info(
-                                        "Missing rows detected. Performing TRUNCATE + INSERT."
-                                    )
+
 
                                     truncate_query = (
                                         f"DELETE FROM {table_name} WHERE Company = ?;"
@@ -2077,9 +1989,7 @@ if "Subsidiary" in main_folder_list:
                                                    END
 
                                                """
-                                    logging.info(
-                                        "Beginning insertion into ENV-Utilites table."
-                                    )
+
                                     for _, row in df.iterrows():
 
                                         placeholders = (
@@ -2097,9 +2007,7 @@ if "Subsidiary" in main_folder_list:
                                             row["Subsi_ActualFuelConsumption(L)"],
                                         )
                                 conn.commit()
-                            logging.info(
-                                f"Data from sheet '{sheet_name}' inserted into table '{table_name}' successfully."
-                            )
+
                             sheet_status[(inferred_dashboard, sheet_name)] = {
                                 "Status": "Success",
                                 "Description": "Sheet processed successfully",
@@ -2145,10 +2053,9 @@ if "Subsidiary" in main_folder_list:
 
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
-                                    logging.info(f"'Created' column removed.")
 
                                 table_name = "[dbo].[SubsidiarySocial-EmployeeByGender]"
-                                logging.info(f"Table name set to: {table_name}")
+
 
                                 existing_rows_query = f"""
                                                                 SELECT Company, Month
@@ -2162,9 +2069,7 @@ if "Subsidiary" in main_folder_list:
                                 df_tuples = set(zip(df["Company"], df["Month"]))
                                 missing_rows = df_tuples - existing_rows_set
                                 if missing_rows:
-                                    logging.info(
-                                        "Missing rows detected. Performing TRUNCATE + INSERT."
-                                    )
+
 
                                     truncate_query = (
                                         f"DELETE FROM {table_name} WHERE Company = ?;"
@@ -2234,9 +2139,6 @@ if "Subsidiary" in main_folder_list:
                                                    END
                                                """
 
-                                    logging.info(
-                                        "Beginning insertion into Social-EmployeeByGender table."
-                                    )
 
                                     for _, row in df.iterrows():
 
@@ -2261,9 +2163,7 @@ if "Subsidiary" in main_folder_list:
                                             row["Turnover_Female"],
                                         )
                                 conn.commit()
-                                logging.info(
-                                    f"Data from sheet '{sheet_name}' inserted into table '{table_name}' successfully."
-                                )
+
                                 sheet_status[(inferred_dashboard, sheet_name)] = {
                                     "Status": "Success",
                                     "Description": "Sheet processed successfully",
@@ -2326,11 +2226,10 @@ if "Subsidiary" in main_folder_list:
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
 
-                                    logging.info(f"'Created' column removed.")
 
                                 table_name = "[dbo].[SubsidiarySocial-EmployeeByAge]"
 
-                                logging.info(f"Table name set to: {table_name}")
+
 
                                 existing_rows_query = f"""
 
@@ -2351,9 +2250,7 @@ if "Subsidiary" in main_folder_list:
 
                                 if missing_rows:
 
-                                    logging.info(
-                                        "Missing rows detected. Performing TRUNCATE + INSERT."
-                                    )
+
 
                                     truncate_query = (
                                         f"DELETE FROM {table_name} WHERE Company = ?;"
@@ -2395,7 +2292,6 @@ if "Subsidiary" in main_folder_list:
 
                                 else:
 
-                                    logging.info(f"Table name set to: {table_name}")
 
                                     update_insert_query = f"""
 
@@ -2476,10 +2372,6 @@ if "Subsidiary" in main_folder_list:
                                                                            END
                                                                        """
 
-                                    logging.info(
-                                        "Beginning insertion into Social-EmployeeByAge table."
-                                    )
-
                                     for _, row in df.iterrows():
                                         cursor.execute(
                                             update_insert_query,
@@ -2518,9 +2410,7 @@ if "Subsidiary" in main_folder_list:
                                         )
 
                                 conn.commit()
-                            logging.info(
-                                f"Data from sheet '{sheet_name}' inserted into table '{table_name}' successfully."
-                            )
+
                             sheet_status[(inferred_dashboard, sheet_name)] = {
                                 "Status": "Success",
                                 "Description": "Sheet processed successfully",
@@ -2554,7 +2444,7 @@ if "Subsidiary" in main_folder_list:
 
                             if "Created" in df.columns:
                                 df.drop(columns=["Created"], inplace=True)
-                                logging.info(f"'Created' column removed.")
+
 
                             table_name = "[dbo].[SubsidiarySocial-CSR]"
 
@@ -2572,9 +2462,7 @@ if "Subsidiary" in main_folder_list:
                             missing_rows = df_tuples - existing_rows_set
 
                             if missing_rows:
-                                logging.info(
-                                    "Missing rows detected. Performing TRUNCATE + INSERT."
-                                )
+
 
                                 truncate_query = (
                                     f"DELETE FROM {table_name} WHERE Company = ?;"
@@ -2636,9 +2524,7 @@ if "Subsidiary" in main_folder_list:
                                     )
 
                             conn.commit()
-                            logging.info(
-                                f"Data from sheet '{sheet_name}' inserted into table '{table_name}' successfully."
-                            )
+
                             sheet_status[(inferred_dashboard, sheet_name)] = {
                                 "Status": "Success",
                                 "Description": "Sheet processed successfully",
@@ -2682,10 +2568,9 @@ if "Subsidiary" in main_folder_list:
 
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
-                                    logging.info(f"'Created' column removed.")
 
                                 table_name = "[dbo].[SubsidiaryGov-ManagementDiversity]"
-                                logging.info(f"Table name set to: {table_name}")
+
 
                                 existing_rows_query = f"""
                                                                                                 SELECT Company, Month
@@ -2699,9 +2584,7 @@ if "Subsidiary" in main_folder_list:
                                 df_tuples = set(zip(df["Company"], df["Month"]))
                                 missing_rows = df_tuples - existing_rows_set
                                 if missing_rows:
-                                    logging.info(
-                                        "Missing rows detected. Performing TRUNCATE + INSERT."
-                                    )
+
 
                                     truncate_query = (
                                         f"DELETE FROM {table_name} WHERE Company = ?;"
@@ -2765,9 +2648,7 @@ if "Subsidiary" in main_folder_list:
                                                                                                                END
                                                                                                                                                             """
 
-                                logging.info(
-                                    "Beginning insertion into Gov-ManagementDiversity table."
-                                )
+
 
                                 for _, row in df.iterrows():
 
@@ -2788,9 +2669,7 @@ if "Subsidiary" in main_folder_list:
                                         row["Middle_Female"],
                                     )
                             conn.commit()
-                            logging.info(
-                                f"Data from sheet '{sheet_name}' inserted into table '{table_name}' successfully."
-                            )
+
                             sheet_status[(inferred_dashboard, sheet_name)] = {
                                 "Status": "Success",
                                 "Description": "Sheet processed successfully",
@@ -2843,13 +2722,10 @@ if "Subsidiary" in main_folder_list:
 
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
-                                    logging.info(f"'Created' column removed.")
                                 if "FY" in df.columns:
                                     try:
                                         df["Year"] = df["Year"].astype(int)
-                                        logging.info(
-                                            "Converted 'Year' column to integers."
-                                        )
+
                                     except ValueError as ve:
                                         logging.error(
                                             f"Failed to convert 'FY' column to integers: {ve}"
@@ -2865,9 +2741,7 @@ if "Subsidiary" in main_folder_list:
                                 df["EndDate"] = pd.to_datetime(
                                     df["EndDate"], errors="coerce"
                                 )
-                                logging.info(
-                                    f"main_folder: {main_folder}, sheet_name: {sheet_name}"
-                                )
+
 
                                 table_name = "[dbo].[SubsidiaryGov-Board]"
                                 existing_rows_query = f"""
@@ -2883,11 +2757,8 @@ if "Subsidiary" in main_folder_list:
                                     zip(df["Company"], df["Name"], df["Year"])
                                 )
                                 missing_rows = df_tuples - existing_rows_set
-                                logging.info(f"Table name set to: {table_name}")
                                 if missing_rows:
-                                    logging.info(
-                                        "Missing rows detected. Performing TRUNCATE + INSERT."
-                                    )
+
 
                                     truncate_query = (
                                         f"DELETE FROM {table_name} WHERE Company = ?;"
@@ -2976,13 +2847,9 @@ if "Subsidiary" in main_folder_list:
                                                                         END
                                                                                              """
 
-                                    logging.info(
-                                        "Beginning insertion into Gov-Board table."
-                                    )
+
                             conn.commit()
-                            logging.info(
-                                f"Data from sheet '{sheet_name}' inserted into table '{table_name}' successfully."
-                            )
+
                             sheet_status[(inferred_dashboard, sheet_name)] = {
                                 "Status": "Success",
                                 "Description": "Sheet processed successfully",
@@ -2999,7 +2866,7 @@ if "Subsidiary" in main_folder_list:
 
                     elif sheet_name == "Targets":
                         try:
-                            logging.info("Special processing for 'Targets'")
+
                             company_name = df["Company"].iloc[0]
                             df = df.drop(columns=["Unnamed:_0"])
                             df.columns = df.columns.str.strip()
@@ -3028,10 +2895,8 @@ if "Subsidiary" in main_folder_list:
 
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
-                                    logging.info(f"'Created' column removed.")
 
                                 table_name = "[dbo].[SubsidiaryTargets]"
-                                logging.info(f"Table name set to: {table_name}")
                                 existing_rows_query = f"""
                                                                         SELECT FY, Company
                                                                          FROM {table_name}
@@ -3044,15 +2909,12 @@ if "Subsidiary" in main_folder_list:
                                 missing_rows = existing_rows_set - df_tuples
 
                                 if missing_rows:
-                                    logging.info(
-                                        "Missing rows detected. Performing TRUNCATE + INSERT."
-                                    )
+
 
                                     truncate_query = (
                                         f"DELETE FROM {table_name} WHERE Company = ?;"
                                     )
                                     cursor.execute(truncate_query, (company_name,))
-                                    logging.info(f"Table name set to: {table_name}")
                                     insert_query = f"""
                                                                    INSERT INTO {table_name} (
                                                                                   [FY],
@@ -3124,9 +2986,7 @@ if "Subsidiary" in main_folder_list:
                                                               END
                                                                                                            """
 
-                                    logging.info(
-                                        f"Beginning insertion into {table_name}."
-                                    )
+
 
                                     for _, row in df.iterrows():
 
@@ -3156,9 +3016,7 @@ if "Subsidiary" in main_folder_list:
                                             ),
                                         )
                             conn.commit()
-                            logging.info(
-                                f"Data from sheet '{sheet_name}' inserted into table '{table_name}' successfully."
-                            )
+
                             sheet_status[(inferred_dashboard, sheet_name)] = {
                                 "Status": "Success",
                                 "Description": "Sheet processed successfully",
