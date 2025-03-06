@@ -144,9 +144,7 @@ def process_subfolders(ctx, parent_path):
 
 
 def get_subfolders(ctx, parent_path):
-    """
-    Retrieves the subfolders under a given folder path.
-    """
+    """Retrieves the subfolders under a given folder path."""
     try:
         folder = ctx.web.get_folder_by_server_relative_url(parent_path)
         folder.expand(["Folders"]).get().execute_query()
