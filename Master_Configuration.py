@@ -17,23 +17,30 @@ try:
     for sheet_name in sheet_to_table_map_config.keys():
         if sheet_name not in config_sheet_names:
             logging.warning(
-                f"Sheet '{sheet_name}' not found in 'Dashboard Configuration Master List' workbook. Skipping.")
+                f"Sheet '{sheet_name}' not found in 'Dashboard Configuration Master List' workbook. Skipping."
+            )
             continue
-        df = pd.read_excel("config_local_copy.xlsx", sheet_name=sheet_name, skiprows=4, header=0)
+        df = pd.read_excel(
+            "config_local_copy.xlsx", sheet_name=sheet_name, skiprows=4, header=0
+        )
         for col in df.columns:
-            if df[col].dtype == 'object':
+            if df[col].dtype == "object":
                 df[col] = df[col].str.strip()
-        df.rename(columns={'Subsidiary Name': 'SubsidiaryName'}, inplace=True)
-        df['Source'] = sheet_name
+        df.rename(columns={"Subsidiary Name": "SubsidiaryName"}, inplace=True)
+        df["Source"] = sheet_name
 
-        if 'Source' in df.columns:
-            df = df.drop(columns=['Source'])
-        df.columns = df.columns.str.strip().str.replace(" ", "_").str.replace(r"[^a-zA-Z0-9_]", "")
+        if "Source" in df.columns:
+            df = df.drop(columns=["Source"])
+        df.columns = (
+            df.columns.str.strip()
+            .str.replace(" ", "_")
+            .str.replace(r"[^a-zA-Z0-9_]", "")
+        )
 
         df.fillna(0, inplace=True)
 
-        if 'Created' in df.columns:
-            df.drop(columns=['Created'], inplace=True)
+        if "Created" in df.columns:
+            df.drop(columns=["Created"], inplace=True)
 
         conn = pyodbc.connect(connection_string)
         cursor = conn.cursor()
@@ -63,11 +70,16 @@ try:
                 """
             for _, row in df.iterrows():
                 placeholders = (
-                    str(row['SubsidiaryName']), str(row['InvestmentAccountName']),
-                    str(row['Abbreviation']), str(row['IncomeAccountName']),
-                    str(row['SubsidiaryName']), str(row['InvestmentAccountName']),
-                    str(row['SubsidiaryName']), str(row['Abbreviation']), str(row['InvestmentAccountName']),
-                    str(row['IncomeAccountName'])
+                    str(row["SubsidiaryName"]),
+                    str(row["InvestmentAccountName"]),
+                    str(row["Abbreviation"]),
+                    str(row["IncomeAccountName"]),
+                    str(row["SubsidiaryName"]),
+                    str(row["InvestmentAccountName"]),
+                    str(row["SubsidiaryName"]),
+                    str(row["Abbreviation"]),
+                    str(row["InvestmentAccountName"]),
+                    str(row["IncomeAccountName"]),
                 )
                 try:
                     cursor.execute(if_exists_query, placeholders)
@@ -87,7 +99,7 @@ try:
                     END
                 """
             for _, row in df.iterrows():
-                placeholders = (row['InvestmentAccount'], row['InvestmentAccount'])
+                placeholders = (row["InvestmentAccount"], row["InvestmentAccount"])
                 try:
                     cursor.execute(insert_query, placeholders)
                 except Exception as e:
@@ -95,4 +107,6 @@ try:
 
         conn.commit()
 except Exception as e:
-    logging.error(f"Error processing 'Dashboard Configuration Master List' workbook: {e}")
+    logging.error(
+        f"Error processing 'Dashboard Configuration Master List' workbook: {e}"
+    )

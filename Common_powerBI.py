@@ -1,4 +1,4 @@
-import os ,re
+import os, re
 import logging
 import pandas as pd
 from office365.runtime.auth.authentication_context import AuthenticationContext
@@ -12,11 +12,11 @@ from datetime import datetime
 import warnings
 
 
-logging.basicConfig(level=logging.DEBUG, format='%(levelname)s: %(message)s')
+logging.basicConfig(level=logging.DEBUG, format="%(levelname)s: %(message)s")
 
 logging.debug("This is a test debug log.")
 
-warnings.simplefilter(action='ignore', category=FutureWarning)
+warnings.simplefilter(action="ignore", category=FutureWarning)
 
 load_dotenv()
 
@@ -41,7 +41,7 @@ sheet_to_table_map_client_a = {
     "KRI Details": "dbo.KRIDetails",
     "Inherent Risk": "dbo.InherentRisk",
     "Residual Risk": "dbo.ResidualRisk",
-    #--------------------operational-----------
+    # --------------------operational-----------
     "Operation Overview": "dbo.OperationOverview",
     "Env - Scope 1 & 2 Emissions": "dbo.Env-Scope1&2Emissions",
     "Env - Scope 2 Electricity": "dbo.Env-Scope2Electricity",
@@ -51,8 +51,7 @@ sheet_to_table_map_client_a = {
     "Social - CSR": "dbo.Social-CSR",
     "Gov - Management Diversity": "dbo.Gov-ManagementDiversity",
     "Gov - Board": "dbo.Gov-Board",
-    "Targets": "dbo.Targets"
-
+    "Targets": "dbo.Targets",
 }
 
 sheet_to_table_map_subsidiary = {
@@ -70,7 +69,7 @@ sheet_to_table_map_subsidiary = {
     "KRI Details": "dbo.SubsidiaryKRIDetails",
     "Inherent Risk": "dbo.SubsidiaryInherentRisk",
     "Residual Risk": "dbo.SubsidiaryResidualRisk",
-    #-------------operational-------------------
+    # -------------operational-------------------
     "Financial Performance": "dbo.OP_FinancialPerformance",
     "Project Timeline": "dbo.OP_ProjectTimeline",
     "Construction Timeline": "dbo.OP_ConstructionTimeline",
@@ -88,20 +87,21 @@ sheet_to_table_map_subsidiary = {
     "Social - CSR": "dbo.SubsidiarySocial-CSR",
     "Gov - Management Diversity": "dbo.SubsidiaryGov-ManagementDiversity",
     "Gov - Board": "dbo.SubsidiaryGov-Board",
-    "Targets": "dbo.SubsidiaryTargets"
-
+    "Targets": "dbo.SubsidiaryTargets",
 }
 
 sheet_to_table_map_config = {
     "Subsidiary List": "dbo.SubsidiaryList",
-    "Investment List": "dbo.InvestmentAccountList"
+    "Investment List": "dbo.InvestmentAccountList",
 }
+
 
 def escape_special_characters(text):
     # Ensure text is a string before applying the regex
     if not isinstance(text, str):
         text = str(text)  # Convert non-string values to strings
-    return re.sub(r'([\\\'\"%_])', r'\\\1', text)
+    return re.sub(r"([\\\'\"%_])", r"\\\1", text)
+
 
 def get_nested_folders(ctx, parent_path="/sites/Dashboard-UAT/Shared%20Documents"):
     folder_collection = ctx.web.get_folder_by_server_relative_url(parent_path).folders
@@ -130,7 +130,7 @@ def process_subfolders(ctx, parent_path):
 
     for file in file_collection:
         file_name = file.properties["Name"]
-        if file_name.endswith('.xlsx') and file_name not in []:
+        if file_name.endswith(".xlsx") and file_name not in []:
             xlsx_files.append(file.properties["ServerRelativeUrl"])
 
     for folder in folder_collection:
