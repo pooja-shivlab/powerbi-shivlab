@@ -161,7 +161,7 @@ if "Subsidiary" in main_folder_list:
                                 df.rename(columns=column_mapping, inplace=True)
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
-                                    logging.info(f"'Created' column removed.")
+                                    logging.info("'Created' column removed.")
                                 table_name = "dbo.OP_FinancialPerformance"
                                 existing_rows_query = f"""
                                                     SELECT Date, Remarks ,Company
@@ -467,7 +467,7 @@ if "Subsidiary" in main_folder_list:
 
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
-                                    logging.info(f"'Created' column removed.")
+                                    logging.info("'Created' column removed.")
 
                                 project_list_df = pd.DataFrame(
                                     project_list, columns=["Subsidiary_Name", "Project"]
@@ -708,7 +708,7 @@ if "Subsidiary" in main_folder_list:
 
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
-                                    logging.info(f"'Created' column removed.")
+                                    logging.info("'Created' column removed.")
 
                                 table_name = "dbo.OP_ProjectExpenses"
                                 existing_rows_query = f"""
@@ -1074,7 +1074,7 @@ if "Subsidiary" in main_folder_list:
 
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
-                                    logging.info(f"'Created' column removed.")
+                                    logging.info("'Created' column removed.")
 
                                 df["ContractedElectricityDelivered"] = df[
                                     "ContractedElectricityDelivered"
@@ -1220,7 +1220,7 @@ if "Subsidiary" in main_folder_list:
 
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
-                                    logging.info(f"'Created' column removed.")
+                                    logging.info("'Created' column removed.")
 
                                 table_name = "dbo.OP_MonthlyElectricityGeneration"
                                 existing_rows_query = f"""
@@ -1385,7 +1385,7 @@ if "Subsidiary" in main_folder_list:
 
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
-                                    logging.info(f"'Created' column removed.")
+                                    logging.info("'Created' column removed.")
 
                                 table_name = "OP_DailyElectricityGeneration"
 
@@ -1524,7 +1524,7 @@ if "Subsidiary" in main_folder_list:
 
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
-                                    logging.info(f"'Created' column removed.")
+                                    logging.info("'Created' column removed.")
 
                                 table_name = "dbo.OP_CoalStockpileDaily"
                                 existing_rows_query = f"""
@@ -1679,7 +1679,7 @@ if "Subsidiary" in main_folder_list:
 
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
-                                    logging.info(f"'Created' column removed.")
+                                    logging.info("'Created' column removed.")
 
                                 table_name = "dbo.OP_MonthlyOutagesAndAvailability"
                                 existing_rows_query = f"""
@@ -1877,7 +1877,7 @@ if "Subsidiary" in main_folder_list:
 
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
-                                    logging.info(f"'Created' column removed.")
+                                    logging.info("'Created' column removed.")
 
                                 table_name = "[dbo].[SubsidiaryEnv-Scope1&2Emissions]"
                                 existing_rows_query = f"""
@@ -2145,7 +2145,7 @@ if "Subsidiary" in main_folder_list:
 
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
-                                    logging.info(f"'Created' column removed.")
+                                    logging.info("'Created' column removed.")
 
                                 table_name = "[dbo].[SubsidiarySocial-EmployeeByGender]"
                                 logging.info(f"Table name set to: {table_name}")
@@ -2326,7 +2326,7 @@ if "Subsidiary" in main_folder_list:
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
 
-                                    logging.info(f"'Created' column removed.")
+                                    logging.info("'Created' column removed.")
 
                                 table_name = "[dbo].[SubsidiarySocial-EmployeeByAge]"
 
@@ -2554,7 +2554,7 @@ if "Subsidiary" in main_folder_list:
 
                             if "Created" in df.columns:
                                 df.drop(columns=["Created"], inplace=True)
-                                logging.info(f"'Created' column removed.")
+                                logging.info("'Created' column removed.")
 
                             table_name = "[dbo].[SubsidiarySocial-CSR]"
 
@@ -2682,7 +2682,7 @@ if "Subsidiary" in main_folder_list:
 
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
-                                    logging.info(f"'Created' column removed.")
+                                    logging.info("'Created' column removed.")
 
                                 table_name = "[dbo].[SubsidiaryGov-ManagementDiversity]"
                                 logging.info(f"Table name set to: {table_name}")
@@ -2843,7 +2843,7 @@ if "Subsidiary" in main_folder_list:
 
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
-                                    logging.info(f"'Created' column removed.")
+                                    logging.info("'Created' column removed.")
                                 if "FY" in df.columns:
                                     try:
                                         df["Year"] = df["Year"].astype(int)
@@ -3028,7 +3028,7 @@ if "Subsidiary" in main_folder_list:
 
                                 if "Created" in df.columns:
                                     df.drop(columns=["Created"], inplace=True)
-                                    logging.info(f"'Created' column removed.")
+                                    logging.info("'Created' column removed.")
 
                                 table_name = "[dbo].[SubsidiaryTargets]"
                                 logging.info(f"Table name set to: {table_name}")
