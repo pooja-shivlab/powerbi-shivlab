@@ -14,29 +14,30 @@ from azure.storage.blob import BlobServiceClient,generate_blob_sas,BlobSasPermis
 from io import BytesIO
 from office365.sharepoint.files.file import File
 import warnings
+import pytz
 
 logging.basicConfig(level=logging.DEBUG, format="%(levelname)s: %(message)s")
-
 logging.debug("This is a test debug log.")
 
-warnings.simplefilter(action="ignore", category=FutureWarning)
-
 load_dotenv()
+#blob passed
 
 account_name = None
 account_key = None
 container_name = None
 blob_connection_string = None
+
+
 blob_service_client = BlobServiceClient.from_connection_string(blob_connection_string)
 container_client = blob_service_client.get_container_client(container_name)
 
 blob_list = []
 for blob_i in container_client.list_blobs():
     blob_list.append(blob_i.name)
+    logging.info(f"blob list length: {len(blob_list)}")
 
 def uploadToBlobStorage(file_path,file_name):
     blob_client = blob_service_client.get_blob_client(container=container_name,blob=file_name)
-
     # with open(file_path,"rb") as data:
     blob_client.upload_blob(file_path,overwrite=True)
     logging.info("file uploaded successfully")
@@ -187,39 +188,3 @@ connection_string = (
     f"Encrypt=yes;"
     f"TrustServerCertificate=yes;"
 )
-
-global_subfolder = ""
-try:
-
-    local_copy_sas_url = None
-    config_local_copy_sas_url = None
-    for blob_i in blob_list:
-        sas_i = generate_blob_sas(account_name=account_name, container_name=container_name, blob_name=blob_i,
-                                  account_key=account_key, permission=BlobSasPermissions(read=True),
-                                  expiry=datetime.now() + timedelta(hours=1))
-        sas_url = 'https://' + account_name + '.blob.core.windows.net/' + container_name + '/' + blob_i + '?' + sas_i
-        logging.info(sas_i)
-        logging.info(sas_url)
-        if "config_local_copy" in blob_i:
-            config_local_copy_sas_url = sas_url
-            logging.info(f"Stored SAS URL for config_local_copy: {config_local_copy_sas_url}")
-        elif "local_copy" in blob_i:
-            local_copy_sas_url = sas_url
-            logging.info(f"Stored SAS URL for local_copy: {local_copy_sas_url}")
-    auth_context = AuthenticationContext(site_url)
-    if auth_context.acquire_token_for_user(username, password):
-        logging.info("Authentication successful.")
-        ctx = ClientContext(site_url, auth_context)
-
-        main_and_subfolders = sorted(get_nested_folders(ctx))
-        all_xlsx_files = []
-        conn = pyodbc.connect(connection_string)
-        logging.info("Connected to SQL Server successfully.")
-        cursor = conn.cursor()
-        main_folder_list = []
-        for main_folder in main_and_subfolders:
-            logging.info(f"Checking folder: {main_folder}")
-            main_folder_list.append(main_folder)
-
-except Exception as e:
-    logging.error(f"Error during SharePoint authentication: {e}")
